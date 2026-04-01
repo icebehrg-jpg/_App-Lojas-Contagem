@@ -90,10 +90,6 @@
             transition: background 0.2s;
         }
 
-        .back-btn:hover {
-            background: #e0e7ff;
-        }
-
         .back-btn:active {
             transform: scale(0.96);
         }
@@ -510,7 +506,6 @@
             border-bottom: none;
         }
 
-        /* Cores para diferença */
         .diff-positive {
             color: var(--green);
             font-weight: 700;
@@ -555,11 +550,6 @@
             background: var(--amber-bg);
             border: 1px solid var(--amber-text);
             color: var(--amber-text);
-        }
-
-        .recount-btn:hover {
-            background: var(--amber);
-            color: white;
         }
 
         .filter-row {
@@ -739,17 +729,17 @@
             <div style="overflow-x:auto;">
                 <table class="manager-table">
                     <thead>
-                        2?
-                        <th>Fornecedor</th>
-                        <th>Produto</th>
-                        <th>Sistema</th>
-                        <th>Contagem</th>
-                        <th>Dif.</th>
-                        <th>Ações</th>
-                        2?
+                        <tr>
+                            <th>Fornecedor</th>
+                            <th>Produto</th>
+                            <th>Sistema</th>
+                            <th>Contagem</th>
+                            <th>Dif.</th>
+                            <th>Ações</th>
+                        </tr>
                     </thead>
                     <tbody id="manager-tbody"></tbody>
-                    2?
+                </table>
             </div>
         </div>
     </div>
@@ -1053,12 +1043,12 @@
                 const btnAcerto = r.diff === 0 ? `<button class="acerto-btn applied" disabled>Ok</button>` : `<button class="acerto-btn" onclick="applyAcerto(this)">Acertar</button>`;
                 const btnRecount = r.diff !== 0 ? `<button class="recount-btn" onclick="requestRecount('${r.sup}', '${r.ean}')">Recontar</button>` : '';
                 return `<tr data-supplier="${r.sup}">
-                    2<td>${r.sup}</td>
-                    2<td>${r.desc}</td>
-                    2<td>${r.sistema}</td>
-                    2<td>${r.counted}</td>
+                    <td>${r.sup}</td>
+                    <td>${r.desc}</td>
+                    <td>${r.sistema}</td>
+                    <td>${r.counted}</td>
                     <td class="${diffClass}">${sign}${r.diff}</td>
-                    2<td>${btnAcerto} ${btnRecount}</td>
+                    <td>${btnAcerto} ${btnRecount}</td>
                 </tr>`;
             }).join('');
             show('view-manager');
@@ -1098,14 +1088,31 @@
             if (cameraActive) return;
             const container = document.getElementById('camera-container');
             container.classList.add('active');
+            // Limpa qualquer instância anterior
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode = null;
+                }).catch(() => { });
+            }
             html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                stopCamera();
-                lookupEAN(decodedText);
-            }, (errorMessage) => { }).catch(err => {
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText) => {
+                    stopCamera();
+                    lookupEAN(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignora erros contínuos de leitura
+                }
+            ).catch(err => {
                 console.error("Erro ao iniciar câmera:", err);
-                alert("Não foi possível acessar a câmera. Verifique as permissões.");
+                alert("Não foi possível acessar a câmera. Verifique as permissões e certifique-se de que a página está sendo acessada via HTTPS.");
                 stopCamera();
             });
             cameraActive = true;
@@ -1117,7 +1124,12 @@
                     document.getElementById('camera-container').classList.remove('active');
                     cameraActive = false;
                     html5QrCode = null;
-                }).catch(err => console.warn("Erro ao parar câmera", err));
+                }).catch(err => {
+                    console.warn("Erro ao parar câmera", err);
+                    document.getElementById('camera-container').classList.remove('active');
+                    cameraActive = false;
+                    html5QrCode = null;
+                });
             } else {
                 document.getElementById('camera-container').classList.remove('active');
                 cameraActive = false;
