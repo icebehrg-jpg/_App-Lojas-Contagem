@@ -606,6 +606,7 @@
             width: 100%;
             max-width: 500px;
             background: #000;
+            border-radius: 8px;
         }
 
         .close-camera {
@@ -920,7 +921,7 @@
 
             show('view-scan');
 
-            // Foco sem teclado
+            // === Foco sem teclado ===
             const eanInput = document.getElementById('ean-input');
             eanInput.focus();
             eanInput.readOnly = true;
@@ -1003,7 +1004,7 @@
             currentProd = null;
             qtyInput.value = '';
             currentQty = 1;
-            // Foco sem teclado novamente
+            // === Foco sem teclado novamente ===
             const eanInput = document.getElementById('ean-input');
             eanInput.focus();
             eanInput.readOnly = true;
@@ -1097,11 +1098,11 @@
             goHome();
         }
 
+        // === Função da câmera corrigida ===
         function startCamera() {
             if (cameraActive) {
                 stopCamera();
-                // Pequeno atraso para garantir que a câmera foi liberada
-                setTimeout(() => startCamera(), 300);
+                setTimeout(() => startCamera(), 500);
                 return;
             }
             const container = document.getElementById('camera-container');
