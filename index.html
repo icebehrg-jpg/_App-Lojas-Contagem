@@ -925,7 +925,7 @@
             eanInput.focus();
             eanInput.readOnly = true;
             setTimeout(() => {
-                eanInput.readOnly = false; // permite digitar após toque
+                eanInput.readOnly = false;
             }, 200);
         }
 
@@ -954,7 +954,7 @@
                 currentQty = 1;
                 card.innerHTML = `<div class="product-card"><div class="product-name">${found.desc}</div><div class="product-ean">EAN: ${found.ean}</div></div>`;
                 sec.style.display = 'block';
-                qtyInput.focus(); // abre teclado para quantidade
+                qtyInput.focus();
             } else {
                 currentProd = null;
                 card.innerHTML = `<div class="product-card"><div class="not-found">Código não encontrado na lista deste fornecedor.</div><div class="product-ean">Código: ${code}</div></div>`;
@@ -1003,9 +1003,8 @@
             currentProd = null;
             qtyInput.value = '';
             currentQty = 1;
-            document.getElementById('ean-input').focus();
-            // Mantém o comportamento: foco sem teclado novamente
             const eanInput = document.getElementById('ean-input');
+            eanInput.focus();
             eanInput.readOnly = true;
             setTimeout(() => { eanInput.readOnly = false; }, 200);
         }
@@ -1101,22 +1100,35 @@
             if (cameraActive) return;
             const container = document.getElementById('camera-container');
             container.classList.add('active');
+            // Ensure any previous instance is stopped
             if (html5QrCode) {
                 html5QrCode.stop().then(() => {
                     html5QrCode = null;
-                }).catch(() => { });
+                    initCamera();
+                }).catch(() => initCamera());
+            } else {
+                initCamera();
             }
-            html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
-            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                stopCamera();
-                lookupEAN(decodedText);
-            }, (errorMessage) => { }).catch(err => {
-                console.error("Erro ao iniciar câmera:", err);
-                alert("Não foi possível acessar a câmera. Verifique as permissões e certifique-se de que a página está sendo acessada via HTTPS.");
-                stopCamera();
-            });
-            cameraActive = true;
+            function initCamera() {
+                html5QrCode = new Html5Qrcode("reader");
+                const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText) => {
+                        stopCamera();
+                        lookupEAN(decodedText);
+                    },
+                    (errorMessage) => {
+                        // continuous scanning errors are ignored
+                    }
+                ).catch(err => {
+                    console.error("Erro ao iniciar câmera:", err);
+                    alert("Não foi possível acessar a câmera. Verifique as permissões e certifique-se de que a página está sendo acessada via HTTPS.");
+                    stopCamera();
+                });
+                cameraActive = true;
+            }
         }
 
         function stopCamera() {
