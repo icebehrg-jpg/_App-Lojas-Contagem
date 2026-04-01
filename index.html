@@ -718,17 +718,17 @@
             <div style="overflow-x:auto;">
                 <table class="manager-table">
                     <thead>
-                        2?
-                        <th>Fornecedor</th>
-                        <th>Produto</th>
-                        <th>Sistema</th>
-                        <th>Contagem</th>
-                        <th>Dif.</th>
-                        <th>Ações</th>
-                        2?
+                        <tr>
+                            <th>Fornecedor</th>
+                            <th>Produto</th>
+                            <th>Sistema</th>
+                            <th>Contagem</th>
+                            <th>Dif.</th>
+                            <th>Ações</th>
+                        </tr>
                     </thead>
                     <tbody id="manager-tbody"></tbody>
-                    2?
+                </table>
             </div>
         </div>
     </div>
@@ -1028,7 +1028,7 @@
                 const sign = r.diff > 0 ? '+' : '';
                 const btnAcerto = r.diff === 0 ? `<button class="acerto-btn applied" disabled>Ok</button>` : `<button class="acerto-btn" onclick="applyAcerto(this)">Acertar</button>`;
                 const btnRecount = r.diff !== 0 ? `<button class="recount-btn" onclick="requestRecount('${r.sup}', '${r.ean}')">Recontar</button>` : '';
-                return `<tr data-supplier="${r.sup}">2<td>${r.sup}</td>2<td>${r.desc}</td>2<td>${r.sistema}</td>2<td>${r.counted}</td><td class="${cls}">${sign}${r.diff}</td>2<td>${btnAcerto} ${btnRecount}</td>2</tr>`;
+                return `<tr data-supplier="${r.sup}"><td>${r.sup}</td><td>${r.desc}</td><td>${r.sistema}</td><td>${r.counted}</td><td class="${cls}">${sign}${r.diff}</td><td>${btnAcerto} ${btnRecount}</td></tr>`;
             }).join('');
             show('view-manager');
         }
@@ -1101,10 +1101,9 @@
                     if (isNaN(val)) val = 0;
                     currentQty = val;
                 });
-                // Adiciona o evento de Enter no campo quantidade
                 qtyInput.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter') {
-                        e.preventDefault(); // evita qualquer comportamento padrão
+                        e.preventDefault();
                         addItem();
                     }
                 });
