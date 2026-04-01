@@ -920,13 +920,11 @@
 
             show('view-scan');
 
-            // Foco sem teclado
+            // Foco sem teclado: inputmode="none" suprime o teclado virtual.
+            // O teclado só abre quando o usuário toca no campo (evento touchstart remove o inputmode).
             const eanInput = document.getElementById('ean-input');
+            eanInput.setAttribute('inputmode', 'none');
             eanInput.focus();
-            eanInput.readOnly = true;
-            setTimeout(() => {
-                eanInput.readOnly = false;
-            }, 200);
         }
 
         function findProductByCode(code) {
@@ -1003,11 +1001,10 @@
             currentProd = null;
             qtyInput.value = '';
             currentQty = 1;
-            // Foco sem teclado novamente
+            // Volta o foco ao campo EAN sem abrir teclado
             const eanInput = document.getElementById('ean-input');
+            eanInput.setAttribute('inputmode', 'none');
             eanInput.focus();
-            eanInput.readOnly = true;
-            setTimeout(() => { eanInput.readOnly = false; }, 200);
         }
 
         function renderItemsList() {
@@ -1098,62 +1095,61 @@
         }
 
         function startCamera() {
-            if (cameraActive) {
-                stopCamera();
-                // Pequeno atraso para garantir que a câmera foi liberada
-                setTimeout(() => startCamera(), 300);
-                return;
-            }
+            if (cameraActive) return; // evita duplo clique
             const container = document.getElementById('camera-container');
+            const readerEl = document.getElementById('reader');
+            // Limpa o DOM do reader para o html5-qrcode não reclamar de elemento já usado
+            readerEl.innerHTML = '';
             container.classList.add('active');
-            // Limpa qualquer instância anterior
-            if (html5QrCode) {
-                html5QrCode.stop().catch(() => { });
-                html5QrCode = null;
-            }
-            html5QrCode = new Html5Qrcode("reader");
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            };
+
+            html5QrCode = new Html5Qrcode('reader');
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
             html5QrCode.start(
-                { facingMode: "environment" },
+                { facingMode: 'environment' },
                 config,
                 (decodedText) => {
                     stopCamera();
                     lookupEAN(decodedText);
                 },
-                (errorMessage) => {
-                    // Ignora erros contínuos
-                }
-            ).catch(err => {
-                console.error("Erro ao iniciar câmera:", err);
-                alert("Não foi possível acessar a câmera. Verifique as permissões e certifique-se de que a página está sendo acessada via HTTPS.");
-                stopCamera();
+                () => { /* erros de frame ignorados */ }
+            ).then(() => {
+                cameraActive = true;
+            }).catch(err => {
+                console.error('Erro ao iniciar câmera:', err);
+                container.classList.remove('active');
+                html5QrCode = null;
+                cameraActive = false;
+                alert('Não foi possível acessar a câmera. Verifique as permissões e use HTTPS.');
             });
-            cameraActive = true;
         }
 
         function stopCamera() {
-            if (html5QrCode && cameraActive) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('camera-container').classList.remove('active');
-                    cameraActive = false;
-                    html5QrCode = null;
-                }).catch(err => {
-                    console.warn("Erro ao parar câmera", err);
-                    document.getElementById('camera-container').classList.remove('active');
-                    cameraActive = false;
-                    html5QrCode = null;
-                });
+            const container = document.getElementById('camera-container');
+            container.classList.remove('active');
+            if (html5QrCode) {
+                html5QrCode.stop()
+                    .catch(() => { })
+                    .finally(() => {
+                        html5QrCode = null;
+                        cameraActive = false;
+                    });
             } else {
-                document.getElementById('camera-container').classList.remove('active');
                 cameraActive = false;
             }
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            // Ao tocar manualmente no campo EAN, reabilita o teclado virtual
+            const eanField = document.getElementById('ean-input');
+            eanField.addEventListener('touchstart', function () {
+                this.setAttribute('inputmode', 'numeric');
+            });
+            eanField.addEventListener('blur', function () {
+                // Volta a suprimir o teclado ao perder foco (p/ próxima bipagem programática)
+                this.setAttribute('inputmode', 'none');
+            });
+
             const qtyInput = document.getElementById('qty-input');
             if (qtyInput) {
                 qtyInput.addEventListener('input', function () {
