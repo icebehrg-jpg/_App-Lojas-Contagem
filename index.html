@@ -5,15 +5,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Contagem de Estoque</title>
+    <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        /* =============================================
-     TROCAR_ARQUIVO_URL — linha ~55 no script JS
-     Substitua a constante XLS_URL pelo link
-     direto para download do seu arquivo .xls/.xlsx
-  ============================================= */
-
         *,
         *::before,
         *::after {
@@ -23,25 +17,25 @@
         }
 
         :root {
-            --bg: #f0f2f5;
+            --bg: #f4f4f0;
             --surface: #ffffff;
-            --border: #e2e6ea;
-            --border-md: #d0d5da;
-            --text: #1a2c3e;
-            --text-2: #5f6c7a;
-            --text-3: #9aa6b2;
-            --blue: #3b82f6;
-            --blue-bg: #eef2ff;
-            --blue-text: #2563eb;
-            --green: #10b981;
-            --green-bg: #ecfdf5;
-            --green-text: #059669;
-            --amber: #f59e0b;
-            --amber-bg: #fffbeb;
-            --amber-text: #d97706;
-            --red: #ef4444;
-            --red-bg: #fef2f2;
-            --red-text: #dc2626;
+            --border: rgba(0, 0, 0, 0.10);
+            --border-md: rgba(0, 0, 0, 0.18);
+            --text: #1a1a1a;
+            --text-2: #5a5a5a;
+            --text-3: #999;
+            --blue: #1a5fa8;
+            --blue-bg: #e8f0fb;
+            --blue-text: #1a5fa8;
+            --green: #2e7d32;
+            --green-bg: #eaf3e0;
+            --green-text: #2e7d32;
+            --amber: #7a4f00;
+            --amber-bg: #fef3dc;
+            --amber-text: #7a4f00;
+            --red: #b71c1c;
+            --red-bg: #fdecea;
+            --red-text: #b71c1c;
             --radius: 12px;
             --radius-sm: 8px;
         }
@@ -53,6 +47,7 @@
             min-height: 100dvh;
             font-size: 15px;
             line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
         }
 
         .view {
@@ -65,9 +60,10 @@
             display: flex;
         }
 
+        /* HEADER */
         .header {
             background: var(--surface);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 0.5px solid var(--border);
             padding: 14px 16px 12px;
             position: sticky;
             top: 0;
@@ -81,23 +77,13 @@
         }
 
         .back-btn {
-            background: var(--blue-bg);
+            background: none;
             border: none;
             cursor: pointer;
-            color: var(--blue-text);
+            color: var(--blue);
             font-size: 14px;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 30px;
+            padding: 4px 0;
             font-family: inherit;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            transition: background 0.2s;
-        }
-
-        .back-btn:active {
-            transform: scale(0.96);
         }
 
         .header-title {
@@ -113,7 +99,7 @@
 
         .status-bar {
             background: var(--surface);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 0.5px solid var(--border);
             padding: 6px 16px;
             display: flex;
             justify-content: space-between;
@@ -124,7 +110,7 @@
         .content {
             flex: 1;
             overflow-y: auto;
-            padding-bottom: 32px;
+            padding-bottom: 40px;
         }
 
         .section-label {
@@ -136,6 +122,7 @@
             padding: 14px 16px 6px;
         }
 
+        /* TASK CARDS */
         .task-list {
             padding: 0 12px;
             display: flex;
@@ -145,30 +132,31 @@
 
         .task-card {
             background: var(--surface);
-            border: 1px solid var(--border);
+            border: 0.5px solid var(--border);
             border-radius: var(--radius);
             padding: 13px 15px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
-            transition: border-color 0.15s, box-shadow 0.15s;
             -webkit-tap-highlight-color: transparent;
-        }
-
-        .task-card:active {
-            box-shadow: inset 0 0 0 1px var(--border-md);
+            user-select: none;
         }
 
         .task-card.disabled {
             opacity: 0.55;
-            cursor: default;
             pointer-events: none;
         }
 
         .task-supplier {
             font-size: 14px;
             font-weight: 600;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: var(--text-2);
+            margin-top: 3px;
         }
 
         .badge {
@@ -194,10 +182,11 @@
             color: var(--green-text);
         }
 
+        /* SCAN AREA */
         .scan-box {
             margin: 12px;
             background: var(--surface);
-            border: 1px solid var(--border);
+            border: 0.5px solid var(--border);
             border-radius: var(--radius);
             padding: 14px;
             display: flex;
@@ -210,6 +199,89 @@
             color: var(--text-2);
         }
 
+        /* CÂMERA */
+        .camera-wrapper {
+            position: relative;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            background: #000;
+            display: none;
+        }
+
+        .camera-wrapper.open {
+            display: block;
+        }
+
+        #preview {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .scan-line {
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: rgba(255, 80, 80, 0.85);
+            top: 50%;
+            animation: scanMove 1.8s ease-in-out infinite;
+        }
+
+        @keyframes scanMove {
+            0% {
+                top: 30%;
+            }
+
+            50% {
+                top: 70%;
+            }
+
+            100% {
+                top: 30%;
+            }
+        }
+
+        .scan-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .scan-frame {
+            width: 200px;
+            height: 100px;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+        }
+
+        .close-cam-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.55);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .cam-status {
+            font-size: 12px;
+            color: var(--text-2);
+            text-align: center;
+            padding: 4px 0;
+            display: none;
+        }
+
+        /* INPUTS */
         .scan-row {
             display: flex;
             gap: 8px;
@@ -219,67 +291,75 @@
         .loc-input {
             flex: 1;
             height: 42px;
-            border: 1px solid var(--border-md);
+            border: 0.5px solid var(--border-md);
             border-radius: var(--radius-sm);
             padding: 0 12px;
             font-size: 14px;
             font-family: inherit;
             color: var(--text);
-            background: var(--surface);
+            background: var(--bg);
             outline: none;
         }
 
         .scan-input:focus,
-        .loc-input:focus,
-        .qty-input-field:focus {
+        .loc-input:focus {
             border-color: var(--blue);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
 
-        .scan-btn,
-        .add-btn,
-        .finish-btn,
-        .primary-btn {
+        .btn-icon {
             height: 42px;
-            padding: 0 16px;
+            min-width: 42px;
+            padding: 0 14px;
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            border: 0.5px solid var(--border-md);
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-primary {
+            width: 100%;
+            height: 42px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
             border-radius: var(--radius-sm);
             font-size: 14px;
             font-weight: 600;
-            border: none;
             cursor: pointer;
             font-family: inherit;
-            transition: opacity 0.15s;
         }
 
-        .scan-btn {
-            background: var(--surface);
-            border: 1px solid var(--border-md);
-            color: var(--text);
-        }
-
-        .add-btn,
-        .primary-btn {
-            width: 100%;
-            background: var(--blue);
-            color: #fff;
-        }
-
-        .finish-btn {
+        .btn-green {
             margin: 4px 12px 0;
             width: calc(100% - 24px);
+            height: 42px;
             background: var(--green);
             color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
         }
 
-        .add-btn:active,
-        .finish-btn:active,
-        .primary-btn:active {
-            opacity: 0.8;
+        .btn-primary:active,
+        .btn-green:active {
+            opacity: 0.85;
         }
 
         .product-card {
             background: var(--bg);
-            border: 1px solid var(--border);
+            border: 0.5px solid var(--border);
             border-radius: var(--radius-sm);
             padding: 11px 13px;
         }
@@ -319,12 +399,12 @@
         }
 
         .qty-btn {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             background: var(--surface);
-            border: 1px solid var(--border-md);
-            font-size: 18px;
+            border: 0.5px solid var(--border-md);
+            font-size: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -332,17 +412,11 @@
             color: var(--text);
         }
 
-        .qty-input-field {
-            width: 70px;
-            height: 40px;
-            text-align: center;
-            font-size: 18px;
+        .qty-val {
+            font-size: 20px;
             font-weight: 700;
-            border: 1px solid var(--border-md);
-            border-radius: var(--radius-sm);
-            background: var(--surface);
-            font-family: inherit;
-            padding: 0;
+            min-width: 30px;
+            text-align: center;
         }
 
         .loc-row {
@@ -358,6 +432,7 @@
             white-space: nowrap;
         }
 
+        /* ITEMS */
         .items-list {
             padding: 0 12px;
             display: flex;
@@ -368,7 +443,7 @@
 
         .item-row {
             background: var(--surface);
-            border: 1px solid var(--border);
+            border: 0.5px solid var(--border);
             border-radius: var(--radius-sm);
             padding: 9px 13px;
             display: flex;
@@ -391,8 +466,8 @@
             font-size: 14px;
             font-weight: 700;
             color: var(--blue);
+            margin-left: 10px;
             white-space: nowrap;
-            margin-left: 12px;
         }
 
         .totals-note {
@@ -401,40 +476,30 @@
             color: var(--text-2);
         }
 
+        /* LOADING / NOTICE */
         .loading-box {
             margin: 32px 16px;
             padding: 20px;
             background: var(--surface);
             border-radius: var(--radius);
-            border: 1px solid var(--border);
+            border: 0.5px solid var(--border);
             text-align: center;
             color: var(--text-2);
             font-size: 14px;
         }
 
-        .error-box {
-            margin: 20px 16px;
-            padding: 16px;
-            background: var(--red-bg);
-            border-radius: var(--radius);
-            border: 1px solid rgba(220, 38, 38, 0.2);
-            color: var(--red-text);
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
-        .url-config {
+        .notice {
             margin: 16px 16px 0;
             padding: 14px;
             background: var(--amber-bg);
-            border: 1px solid rgba(245, 158, 11, 0.2);
+            border: 0.5px solid rgba(122, 79, 0, 0.2);
             border-radius: var(--radius);
             font-size: 13px;
             color: var(--amber-text);
             line-height: 1.6;
         }
 
-        .url-config code {
+        .notice code {
             display: block;
             margin-top: 6px;
             font-family: monospace;
@@ -445,6 +510,7 @@
             word-break: break-all;
         }
 
+        /* MANAGER */
         #view-manager .content {
             padding: 16px;
         }
@@ -458,7 +524,7 @@
 
         .metric-card {
             background: var(--surface);
-            border: 1px solid var(--border);
+            border: 0.5px solid var(--border);
             border-radius: var(--radius-sm);
             padding: 12px 14px;
         }
@@ -489,7 +555,7 @@
             background: var(--surface);
             border-radius: var(--radius);
             overflow: hidden;
-            border: 1px solid var(--border);
+            border: 0.5px solid var(--border);
         }
 
         .manager-table th {
@@ -499,12 +565,12 @@
             color: var(--text-2);
             text-align: left;
             padding: 8px 12px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 0.5px solid var(--border);
         }
 
         .manager-table td {
             padding: 9px 12px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 0.5px solid var(--border);
             vertical-align: middle;
         }
 
@@ -512,37 +578,27 @@
             border-bottom: none;
         }
 
-        .diff-positive {
+        .diff-ok {
             color: var(--green);
             font-weight: 700;
         }
 
-        .diff-negative {
+        .diff-warn {
             color: var(--red);
             font-weight: 700;
         }
 
-        .diff-zero {
-            color: var(--text);
-            font-weight: 500;
-        }
-
-        .acerto-btn,
-        .recount-btn {
+        .acerto-btn {
             height: 28px;
             padding: 0 12px;
             font-size: 11px;
             font-weight: 600;
             border-radius: var(--radius-sm);
+            border: 0.5px solid var(--border-md);
+            background: var(--surface);
+            color: var(--text);
             cursor: pointer;
             font-family: inherit;
-            margin: 0 2px;
-        }
-
-        .acerto-btn {
-            background: var(--surface);
-            border: 1px solid var(--border-md);
-            color: var(--text);
         }
 
         .acerto-btn.applied {
@@ -550,12 +606,6 @@
             color: var(--green-text);
             border-color: transparent;
             cursor: default;
-        }
-
-        .recount-btn {
-            background: var(--amber-bg);
-            border: 1px solid var(--amber-text);
-            color: var(--amber-text);
         }
 
         .filter-row {
@@ -571,7 +621,7 @@
             border-radius: 99px;
             font-size: 12px;
             font-weight: 500;
-            border: 1px solid var(--border-md);
+            border: 0.5px solid var(--border-md);
             background: var(--surface);
             color: var(--text-2);
             cursor: pointer;
@@ -581,73 +631,14 @@
         .chip.active {
             background: var(--blue-bg);
             color: var(--blue-text);
-            border-color: var(--blue);
-        }
-
-        .camera-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .camera-container.active {
-            display: flex;
-        }
-
-        #reader {
-            width: 100%;
-            max-width: 500px;
-            background: #000;
-            border-radius: 8px;
-        }
-
-        .close-camera {
-            background: #fff;
-            border: none;
-            padding: 12px 24px;
-            margin-top: 20px;
-            border-radius: 40px;
-            font-weight: bold;
-            font-size: 16px;
-        }
-
-        .recount-alert {
-            background: var(--red-bg);
-            border-left: 4px solid var(--red);
-            padding: 10px 12px;
-            margin: 0 12px 12px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-        }
-
-        .recount-alert strong {
-            color: var(--red-text);
-        }
-
-        .recount-list {
-            margin-top: 6px;
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .recount-list li {
-            font-family: monospace;
-            font-size: 12px;
-            margin-top: 4px;
+            border-color: #8ab4e8;
         }
     </style>
 </head>
 
 <body>
 
+    <!-- VIEW 1 — HOME -->
     <div class="view active" id="view-home">
         <div class="header">
             <div class="header-title">Contagem de Estoque</div>
@@ -658,10 +649,11 @@
             <span id="home-progress">—</span>
         </div>
         <div class="content" id="home-content">
-            <div class="loading-box" id="loading-msg">Buscando planilha...</div>
+            <div class="loading-box">Buscando planilha...</div>
         </div>
     </div>
 
+    <!-- VIEW 2 — SCAN -->
     <div class="view" id="view-scan">
         <div class="header">
             <div class="header-row">
@@ -674,20 +666,45 @@
         </div>
         <div class="content">
             <div class="scan-box">
-                <div class="scan-hint">Bipe ou digite o EAN do produto</div>
-                <div class="scan-row">
-                    <input class="scan-input" id="ean-input" type="text" inputmode="none"
-                        placeholder="EAN / código de barras" />
-                    <button class="scan-btn" id="scan-camera-btn" onclick="startCamera()">📷 Bipar</button>
+                <div class="scan-hint">Bipe o código de barras ou digite o EAN manualmente</div>
+
+                <!-- Câmera -->
+                <div class="camera-wrapper" id="camera-wrapper">
+                    <video id="preview" autoplay muted playsinline></video>
+                    <div class="scan-line"></div>
+                    <div class="scan-overlay">
+                        <div class="scan-frame"></div>
+                    </div>
+                    <button class="close-cam-btn" onclick="stopCamera()">✕ Fechar</button>
                 </div>
+                <div class="cam-status" id="cam-status">Iniciando câmera...</div>
+
+                <!-- Input manual + botão câmera -->
+                <div class="scan-row">
+                    <input class="scan-input" id="ean-input" type="text" inputmode="numeric"
+                        placeholder="EAN / código de barras" />
+                    <button class="btn-icon" id="cam-btn" onclick="toggleCamera()" title="Abrir câmera">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                            <circle cx="12" cy="13" r="4" />
+                        </svg>
+                        Câmera
+                    </button>
+                    <button class="btn-icon" onclick="lookupEAN()">Buscar</button>
+                </div>
+
+                <!-- Produto encontrado -->
                 <div id="product-card" style="display:none;"></div>
+
+                <!-- Qtd + Local + Adicionar -->
                 <div id="add-section" style="display:none;">
                     <div class="qty-row">
                         <span class="qty-label">Quantidade:</span>
                         <div class="qty-ctrl">
                             <button class="qty-btn" onclick="changeQty(-1)">−</button>
-                            <input type="number" id="qty-input" class="qty-input-field" value="" min="1" step="1"
-                                placeholder="1" />
+                            <span class="qty-val" id="qty-val">1</span>
                             <button class="qty-btn" onclick="changeQty(1)">+</button>
                         </div>
                     </div>
@@ -696,17 +713,18 @@
                         <input class="loc-input" id="loc-input" placeholder="ex: Prateleira A1" />
                     </div>
                     <br>
-                    <button class="add-btn" onclick="addItem()">Adicionar contagem</button>
+                    <button class="btn-primary" onclick="addItem()">Adicionar contagem</button>
                 </div>
             </div>
 
             <div class="section-label">Itens contados nesta sessão</div>
             <div class="items-list" id="items-list"></div>
             <div class="totals-note" id="totals-note"></div>
-            <button class="finish-btn" onclick="finishSupplier()">Finalizar contagem deste fornecedor</button>
+            <button class="btn-green" onclick="finishSupplier()">Finalizar contagem deste fornecedor</button>
         </div>
     </div>
 
+    <!-- VIEW 3 — MANAGER -->
     <div class="view" id="view-manager">
         <div class="header">
             <div class="header-row">
@@ -736,28 +754,27 @@
             <div style="overflow-x:auto;">
                 <table class="manager-table">
                     <thead>
-                        2?
-                        <th>Fornecedor</th>
-                        <th>Produto</th>
-                        <th>Sistema</th>
-                        <th>Contagem</th>
-                        <th>Dif.</th>
-                        <th>Ações</th>
-                        2?
+                        <tr>
+                            <th>Fornecedor</th>
+                            <th>Produto</th>
+                            <th>Sistema</th>
+                            <th>Contagem</th>
+                            <th>Dif.</th>
+                            <th>Ação</th>
+                        </tr>
                     </thead>
                     <tbody id="manager-tbody"></tbody>
-                    2?
+                </table>
             </div>
         </div>
     </div>
 
-    <div id="camera-container" class="camera-container">
-        <div id="reader" style="width: 100%; max-width: 500px;"></div>
-        <button class="close-camera" onclick="stopCamera()">Fechar câmera</button>
-    </div>
-
     <script>
-        const XLS_URL = "https://img.kalunga.com.br/Hotsite/teste-app-lojas.xlsx";
+        /* ══════════════════════════════════════════════
+           ⬇  CONFIGURAÇÃO — substitua pela URL do XLS
+        ══════════════════════════════════════════════ */
+        const XLS_URL = "TROCAR_ARQUIVO_URL";
+        /* ════════════════════════════════════════════ */
 
         let suppliers = {};
         let currentSupplier = null;
@@ -766,28 +783,96 @@
         let sessionItems = [];
         let currentProd = null;
         let currentQty = 1;
-        let recountRequests = {};
-        let html5QrCode = null;
-        let cameraActive = false;
 
+        // ZXing scanner
+        let codeReader = null;
+        let cameraActive = false;
+        let selectedDeviceId = null;
+
+        /* ─── NAVEGAÇÃO ─── */
         function show(id) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
-
         function goHome() {
-            if (cameraActive) stopCamera();
+            stopCamera();
             renderHome();
             show('view-home');
         }
 
+        /* ─── CÂMERA ─── */
+        async function toggleCamera() {
+            if (cameraActive) { stopCamera(); return; }
+            await startCamera();
+        }
+
+        async function startCamera() {
+            const wrapper = document.getElementById('camera-wrapper');
+            const statusEl = document.getElementById('cam-status');
+            const camBtn = document.getElementById('cam-btn');
+
+            statusEl.style.display = 'block';
+            statusEl.textContent = 'Solicitando permissão da câmera...';
+
+            try {
+                // Seleciona câmera traseira se disponível
+                const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+                const back = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
+                selectedDeviceId = back ? back.deviceId : undefined;
+
+                codeReader = new ZXing.BrowserMultiFormatReader();
+                wrapper.classList.add('open');
+                statusEl.textContent = 'Aponte para o código de barras...';
+                camBtn.style.background = '#e8f0fb';
+
+                cameraActive = true;
+
+                await codeReader.decodeFromVideoDevice(
+                    selectedDeviceId,
+                    'preview',
+                    (result, err) => {
+                        if (result) {
+                            const ean = result.getText();
+                            stopCamera();
+                            document.getElementById('ean-input').value = ean;
+                            lookupEAN();
+                            // vibração háptica se suportado
+                            if (navigator.vibrate) navigator.vibrate(80);
+                        }
+                    }
+                );
+            } catch (e) {
+                statusEl.textContent = 'Câmera não disponível: ' + (e.message || e);
+                wrapper.classList.remove('open');
+                cameraActive = false;
+                console.error('Camera error:', e);
+            }
+        }
+
+        function stopCamera() {
+            if (codeReader) {
+                try { codeReader.reset(); } catch (e) { }
+                codeReader = null;
+            }
+            cameraActive = false;
+            document.getElementById('camera-wrapper').classList.remove('open');
+            document.getElementById('cam-status').style.display = 'none';
+            const camBtn = document.getElementById('cam-btn');
+            if (camBtn) camBtn.style.background = '';
+        }
+
+        /* ─── PLANILHA ─── */
         async function loadSheet() {
             const content = document.getElementById('home-content');
+
             if (XLS_URL === "TROCAR_ARQUIVO_URL") {
-                content.innerHTML = `<div class="url-config"><strong>Configure o arquivo de estoque</strong><br>Abra este HTML em um editor de texto e substitua a constante na linha indicada:<code>const XLS_URL = "TROCAR_ARQUIVO_URL";</code>Cole o link direto do seu arquivo .xls ou .xlsx no lugar de <em>TROCAR_ARQUIVO_URL</em>.</div><div class="section-label">Demonstração (dados fictícios)</div>`;
-                loadDemo();
-                return;
+                content.innerHTML = `<div class="notice">
+      <strong>Configure o arquivo de estoque</strong><br>
+      Abra o HTML e substitua: <code>const XLS_URL = "TROCAR_ARQUIVO_URL";</code>
+    </div><div class="section-label">Demonstração (dados fictícios)</div>`;
+                loadDemo(); return;
             }
+
             content.innerHTML = '<div class="loading-box">Buscando planilha...</div>';
             try {
                 const resp = await fetch(XLS_URL);
@@ -799,47 +884,49 @@
                 parseRows(rows);
                 renderHome();
             } catch (e) {
-                content.innerHTML = `<div class="error-box"><strong>Não foi possível carregar a planilha.</strong><br><br>Verifique se a URL está correta e se o arquivo permite acesso público.<br><br>Erro: ${e.message}</div>`;
+                content.innerHTML = `<div class="notice" style="background:var(--red-bg);color:var(--red-text);">
+      Erro ao carregar planilha: ${e.message}
+    </div>`;
                 loadDemo();
             }
         }
 
+        /* Col0=fornecedor | Col1=EAN | Col2=descrição | Col3=qtd sistema (oculto) */
         function parseRows(rows) {
             suppliers = {};
             rows.forEach((r, i) => {
-                if (i === 0) return;
+                if (i === 0 && isNaN(parseFloat(r[3]))) return; // pula header textual
                 const sup = String(r[0] || '').trim();
                 const ean = String(r[1] || '').trim();
                 const desc = String(r[2] || '').trim();
                 const qtd = parseFloat(r[3]) || 0;
-                const codAlternativo = r[4] ? String(r[4]).trim() : '';
                 if (!sup || !ean) return;
                 if (!suppliers[sup]) suppliers[sup] = { produtos: [] };
-                suppliers[sup].produtos.push({ ean, codAlternativo, desc, qtdSistema: qtd });
+                suppliers[sup].produtos.push({ ean, desc, qtdSistema: qtd });
             });
             Object.keys(suppliers).forEach(s => {
                 if (!supplierStatus[s]) supplierStatus[s] = 'pending';
-                if (!recountRequests[s]) recountRequests[s] = [];
             });
         }
 
         function loadDemo() {
             const demo = [
-                ['Unilever', '7891150011267', 'Sabão OMO 1kg', 8, ''],
-                ['Unilever', '7891024143773', 'Dove Shampoo 400ml', 15, ''],
-                ['Unilever', '7891150055291', 'Comfort Azul 2L', 10, ''],
-                ['P&G', '7500435127646', 'Ariel 2kg', 20, ''],
-                ['P&G', '7501001160038', 'Pantene Pro-V 400ml', 12, ''],
-                ['P&G', '7500435311001', 'Downy 1L', 18, ''],
-                ['Nestlé', '7613035352148', 'Nescafé Clássico 100g', 25, ''],
-                ['Nestlé', '7891000315231', 'Leite Moça 395g', 30, ''],
-                ['Ambev', '7891991012072', 'Skol Lata 350ml', 48, ''],
-                ['Ambev', '7891149108683', 'Brahma 600ml', 30, ''],
+                [null],
+                ['Unilever', '7891150011267', 'Sabão OMO 1kg', 8],
+                ['Unilever', '7891024143773', 'Dove Shampoo 400ml', 15],
+                ['Unilever', '7891150055291', 'Comfort Azul 2L', 10],
+                ['P&G', '7500435127646', 'Ariel 2kg', 20],
+                ['P&G', '7501001160038', 'Pantene Pro-V 400ml', 12],
+                ['Nestlé', '7613035352148', 'Nescafé Clássico 100g', 25],
+                ['Nestlé', '7891000315231', 'Leite Moça 395g', 30],
+                ['Ambev', '7891991012072', 'Skol Lata 350ml', 48],
+                ['Ambev', '7891149108683', 'Brahma 600ml', 30],
             ];
-            parseRows([null, ...demo]);
+            parseRows(demo);
             renderHome();
         }
 
+        /* ─── HOME ─── */
         function renderHome() {
             const names = Object.keys(suppliers);
             const done = names.filter(n => supplierStatus[n] === 'done');
@@ -851,114 +938,82 @@
 
             const content = document.getElementById('home-content');
             let html = '';
+
             if (XLS_URL === "TROCAR_ARQUIVO_URL") {
-                html += `<div class="url-config"><strong>Modo demonstração</strong> — dados fictícios carregados.<br>Substitua <code>TROCAR_ARQUIVO_URL</code> no código pelo link da sua planilha.</div>`;
+                html += `<div class="notice">Modo demonstração — substitua <code>TROCAR_ARQUIVO_URL</code> pelo link da sua planilha.</div>`;
             }
+
             if (prog.length) {
-                html += `<div class="section-label">Em andamento</div><div class="task-list">`;
-                prog.forEach(n => html += taskCard(n, 'active'));
-                html += `</div>`;
+                html += `<div class="section-label">Em andamento</div><div class="task-list">${prog.map(n => taskCard(n, 'progress')).join('')}</div>`;
             }
             if (pend.length) {
-                html += `<div class="section-label">Pendentes</div><div class="task-list">`;
-                pend.forEach(n => html += taskCard(n, 'pending'));
-                html += `</div>`;
+                html += `<div class="section-label">Pendentes</div><div class="task-list">${pend.map(n => taskCard(n, 'pending')).join('')}</div>`;
             }
             if (done.length) {
-                html += `<div class="section-label">Concluídas</div><div class="task-list">`;
-                done.forEach(n => html += taskCard(n, 'done'));
-                html += `</div>`;
+                html += `<div class="section-label">Concluídas</div><div class="task-list">${done.map(n => taskCard(n, 'done')).join('')}</div>`;
             }
             if (done.length === names.length && names.length > 0) {
-                html += `<div style="padding:16px;"><button class="primary-btn" onclick="openManager()" style="background:var(--blue);color:#fff;width:100%;height:46px;font-size:15px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-weight:600;">Ver painel gerencial →</button></div>`;
+                html += `<div style="padding:16px;">
+      <button onclick="openManager()" style="width:100%;height:46px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">
+        Ver painel gerencial →
+      </button></div>`;
             }
             content.innerHTML = html;
         }
 
         function taskCard(name, status) {
-            const labels = { pending: 'Pendente', active: 'Em andamento', done: 'Concluída' };
+            const p = suppliers[name].produtos.length;
+            const lbl = { pending: 'Pendente', active: 'Em andamento', done: 'Concluída' };
             const cls = { pending: 'badge-pending', active: 'badge-progress', done: 'badge-done' };
-            const dis = status === 'done' ? ' disabled' : '';
-            const click = status !== 'done' ? `onclick="openScan('${name.replace(/'/g, "\\'")}', this)"` : '';
-            return `<div class="task-card${dis ? ' disabled' : ''}" ${click}><div><div class="task-supplier">${name}</div></div><span class="badge ${cls[status]}">${labels[status]}</span></div>`;
+            const click = status !== 'done' ? `onclick="openScan('${name.replace(/'/g, "\\'")}')"` : '';
+            return `<div class="task-card${status === 'done' ? ' disabled' : ''}" ${click}>
+    <div><div class="task-supplier">${name}</div><div class="task-meta">${p} produto(s)</div></div>
+    <span class="badge ${cls[status]}">${lbl[status]}</span>
+  </div>`;
         }
 
+        /* ─── SCAN ─── */
         function openScan(name) {
             currentSupplier = name;
             sessionItems = [];
             currentProd = null;
             currentQty = 1;
-            if (supplierStatus[name] === 'done') {
-                supplierStatus[name] = 'active';
-            } else if (supplierStatus[name] !== 'active') {
-                supplierStatus[name] = 'active';
-            }
+            supplierStatus[name] = 'active';
 
-            const prods = suppliers[name].produtos;
             document.getElementById('scan-title').textContent = name;
-            document.getElementById('scan-sub').textContent = `${prods.length} produto(s) na lista`;
+            document.getElementById('scan-sub').textContent = `${suppliers[name].produtos.length} produto(s) na lista`;
             document.getElementById('ean-input').value = '';
             document.getElementById('product-card').style.display = 'none';
             document.getElementById('add-section').style.display = 'none';
-            const qtyInput = document.getElementById('qty-input');
-            if (qtyInput) qtyInput.value = '';
+            document.getElementById('qty-val').textContent = '1';
             document.getElementById('loc-input').value = '';
             document.getElementById('items-list').innerHTML = '';
             document.getElementById('totals-note').textContent = '';
-
-            const pendingRecounts = recountRequests[name] || [];
-            const alertDiv = document.getElementById('recount-alert');
-            if (alertDiv) alertDiv.remove();
-            if (pendingRecounts.length > 0) {
-                let alertHtml = `<div class="recount-alert" id="recount-alert"><strong>⚠️ Recontagem solicitada para:</strong><ul class="recount-list">`;
-                pendingRecounts.forEach(ean => {
-                    const prod = prods.find(p => p.ean === ean);
-                    alertHtml += `<li>${prod ? prod.desc : ean} (EAN: ${ean})</li>`;
-                });
-                alertHtml += `</ul></div>`;
-                document.querySelector('#view-scan .content').insertAdjacentHTML('afterbegin', alertHtml);
-            }
-
             show('view-scan');
-
-            // === Foco sem teclado ===
-            const eanInput = document.getElementById('ean-input');
-            eanInput.focus();
-            eanInput.readOnly = true;
-            setTimeout(() => {
-                eanInput.readOnly = false;
-            }, 200);
         }
 
-        function findProductByCode(code) {
+        function lookupEAN() {
+            const ean = document.getElementById('ean-input').value.trim();
+            if (!ean) return;
             const prods = suppliers[currentSupplier]?.produtos || [];
-            return prods.find(p => p.ean === code || (p.codAlternativo && p.codAlternativo === code));
-        }
-
-        function lookupEAN(scanCode = null) {
-            let code = scanCode;
-            if (!code) {
-                code = document.getElementById('ean-input').value.trim();
-            } else {
-                document.getElementById('ean-input').value = code;
-            }
-            if (!code) return;
-
-            const found = findProductByCode(code);
+            const found = prods.find(p => p.ean === ean);
             const card = document.getElementById('product-card');
             const sec = document.getElementById('add-section');
 
             if (found) {
-                currentProd = found;
-                const qtyInput = document.getElementById('qty-input');
-                qtyInput.value = '';
-                currentQty = 1;
-                card.innerHTML = `<div class="product-card"><div class="product-name">${found.desc}</div><div class="product-ean">EAN: ${found.ean}</div></div>`;
+                currentProd = found; currentQty = 1;
+                document.getElementById('qty-val').textContent = '1';
+                card.innerHTML = `<div class="product-card">
+      <div class="product-name">${found.desc}</div>
+      <div class="product-ean">EAN: ${found.ean}</div>
+    </div>`;
                 sec.style.display = 'block';
-                qtyInput.focus(); // teclado aberto para quantidade
             } else {
                 currentProd = null;
-                card.innerHTML = `<div class="product-card"><div class="not-found">Código não encontrado na lista deste fornecedor.</div><div class="product-ean">Código: ${code}</div></div>`;
+                card.innerHTML = `<div class="product-card">
+      <div class="not-found">EAN não encontrado na lista deste fornecedor.</div>
+      <div class="product-ean">EAN buscado: ${ean}</div>
+    </div>`;
                 sec.style.display = 'none';
             }
             card.style.display = 'block';
@@ -969,102 +1024,86 @@
         });
 
         function changeQty(delta) {
-            let input = document.getElementById('qty-input');
-            let currentVal = input.value === '' ? 0 : parseInt(input.value) || 0;
-            let newVal = currentVal + delta;
-            if (newVal < 1) newVal = 1;
-            input.value = newVal;
-            currentQty = newVal;
+            currentQty = Math.max(1, currentQty + delta);
+            document.getElementById('qty-val').textContent = currentQty;
         }
 
         function addItem() {
             if (!currentProd) return;
-            const qtyInput = document.getElementById('qty-input');
-            let qty = qtyInput.value === '' ? 1 : parseInt(qtyInput.value) || 1;
-            if (qty < 1) qty = 1;
             const loc = document.getElementById('loc-input').value.trim() || 'Sem local';
-            const ean = currentProd.ean;
-
-            if (recountRequests[currentSupplier] && recountRequests[currentSupplier].includes(ean)) {
-                if (counts[ean]) delete counts[ean];
-                recountRequests[currentSupplier] = recountRequests[currentSupplier].filter(e => e !== ean);
-                const alertDiv = document.getElementById('recount-alert');
-                if (alertDiv && recountRequests[currentSupplier].length === 0) alertDiv.remove();
-            }
-
-            if (!counts[ean]) counts[ean] = [];
-            counts[ean].push({ local: loc, qty: qty });
-            sessionItems.push({ ean: ean, desc: currentProd.desc, qty: qty, local: loc });
+            sessionItems.push({ ean: currentProd.ean, desc: currentProd.desc, qty: currentQty, local: loc });
+            if (!counts[currentProd.ean]) counts[currentProd.ean] = [];
+            counts[currentProd.ean].push({ local: loc, qty: currentQty });
             renderItemsList();
-
             document.getElementById('ean-input').value = '';
             document.getElementById('loc-input').value = '';
             document.getElementById('product-card').style.display = 'none';
             document.getElementById('add-section').style.display = 'none';
-            currentProd = null;
-            qtyInput.value = '';
-            currentQty = 1;
-            // === Foco sem teclado novamente ===
-            const eanInput = document.getElementById('ean-input');
-            eanInput.focus();
-            eanInput.readOnly = true;
-            setTimeout(() => { eanInput.readOnly = false; }, 200);
+            currentProd = null; currentQty = 1;
+            document.getElementById('qty-val').textContent = '1';
+            document.getElementById('ean-input').focus();
         }
 
         function renderItemsList() {
             const list = document.getElementById('items-list');
-            list.innerHTML = sessionItems.map(it => `<div class="item-row"><div><div class="item-name">${it.desc}</div><div class="item-meta">EAN ${it.ean} · ${it.local}</div></div><div class="item-qty">${it.qty} un</div></div>`).join('');
+            list.innerHTML = sessionItems.map(it =>
+                `<div class="item-row">
+      <div><div class="item-name">${it.desc}</div><div class="item-meta">EAN ${it.ean} · ${it.local}</div></div>
+      <div class="item-qty">${it.qty} un</div>
+    </div>`
+            ).join('');
             const totMap = {};
             sessionItems.forEach(it => { totMap[it.ean] = (totMap[it.ean] || 0) + it.qty; });
-            const multi = Object.entries(totMap).filter(([, v]) => v > 0);
-            document.getElementById('totals-note').innerHTML = multi.map(([ean, tot]) => {
-                const prod = (suppliers[currentSupplier]?.produtos || []).find(p => p.ean === ean);
-                return `<strong>${prod?.desc || ean}:</strong> total somado = ${tot} un`;
-            }).join(' &nbsp;·&nbsp; ');
+            const nota = Object.entries(totMap)
+                .map(([ean, tot]) => {
+                    const p = (suppliers[currentSupplier]?.produtos || []).find(x => x.ean === ean);
+                    return `<strong>${p?.desc || ean}:</strong> total = ${tot} un`;
+                }).join(' · ');
+            document.getElementById('totals-note').innerHTML = nota;
         }
 
         function finishSupplier() {
             supplierStatus[currentSupplier] = 'done';
-            if (recountRequests[currentSupplier]) recountRequests[currentSupplier] = [];
+            stopCamera();
             goHome();
         }
 
+        /* ─── MANAGER ─── */
         function openManager() {
             const names = Object.keys(suppliers);
             let total = 0, ok = 0, warn = 0;
             const rows = [];
+
             names.forEach(sup => {
                 suppliers[sup].produtos.forEach(p => {
                     const counted = (counts[p.ean] || []).reduce((s, c) => s + c.qty, 0);
                     const diff = counted - p.qtdSistema;
-                    total++;
-                    if (diff === 0) ok++; else warn++;
-                    rows.push({ sup, desc: p.desc, ean: p.ean, sistema: p.qtdSistema, counted, diff });
+                    total++; if (diff === 0) ok++; else warn++;
+                    rows.push({ sup, desc: p.desc, sistema: p.qtdSistema, counted, diff });
                 });
             });
+
             document.getElementById('m-total').textContent = total;
             document.getElementById('m-ok').textContent = ok;
             document.getElementById('m-warn').textContent = warn;
-            const chips = `<button class="chip active" onclick="filterMgr(this,'Todos')">Todos</button>` + names.map(n => `<button class="chip" onclick="filterMgr(this,'${n.replace(/'/g, "\\'")}')">${n}</button>`).join('');
-            document.getElementById('supplier-chips').innerHTML = chips;
-            const tbody = document.getElementById('manager-tbody');
-            tbody.innerHTML = rows.map(r => {
-                let diffClass = '';
-                if (r.diff > 0) diffClass = 'diff-positive';
-                else if (r.diff < 0) diffClass = 'diff-negative';
-                else diffClass = 'diff-zero';
+
+            document.getElementById('supplier-chips').innerHTML =
+                `<button class="chip active" onclick="filterMgr(this,'Todos')">Todos</button>` +
+                names.map(n => `<button class="chip" onclick="filterMgr(this,'${n.replace(/'/g, "\\'")}'">${n}</button>`).join('');
+
+            document.getElementById('manager-tbody').innerHTML = rows.map(r => {
+                const cls = r.diff === 0 ? 'diff-ok' : 'diff-warn';
                 const sign = r.diff > 0 ? '+' : '';
-                const btnAcerto = r.diff === 0 ? `<button class="acerto-btn applied" disabled>Ok</button>` : `<button class="acerto-btn" onclick="applyAcerto(this)">Acertar</button>`;
-                const btnRecount = r.diff !== 0 ? `<button class="recount-btn" onclick="requestRecount('${r.sup}', '${r.ean}')">Recontar</button>` : '';
+                const btn = r.diff === 0
+                    ? `<button class="acerto-btn applied" disabled>Ok</button>`
+                    : `<button class="acerto-btn" onclick="applyAcerto(this)">Acertar</button>`;
                 return `<tr data-supplier="${r.sup}">
-                    2<td>${r.sup}</td>
-                    2<td>${r.desc}</td>
-                    2<td>${r.sistema}</td>
-                    2<td>${r.counted}</td>
-                    <td class="${diffClass}">${sign}${r.diff}</td>
-                    2<td>${btnAcerto} ${btnRecount}</td>
-                2?`;
+      <td>${r.sup}</td><td>${r.desc}</td>
+      <td>${r.sistema}</td><td>${r.counted}</td>
+      <td class="${cls}">${sign}${r.diff}</td><td>${btn}</td>
+    </tr>`;
             }).join('');
+
             show('view-manager');
         }
 
@@ -1077,100 +1116,11 @@
         }
 
         function applyAcerto(btn) {
-            btn.textContent = 'Acertado';
-            btn.className = 'acerto-btn applied';
-            btn.disabled = true;
-            const warn = document.querySelectorAll('.acerto-btn:not(.applied)').length;
-            document.getElementById('m-warn').textContent = warn;
+            btn.textContent = 'Acertado'; btn.className = 'acerto-btn applied'; btn.disabled = true;
+            document.getElementById('m-warn').textContent = document.querySelectorAll('.acerto-btn:not(.applied)').length;
         }
 
-        function requestRecount(supplier, ean) {
-            if (!recountRequests[supplier]) recountRequests[supplier] = [];
-            if (!recountRequests[supplier].includes(ean)) {
-                recountRequests[supplier].push(ean);
-            }
-            if (supplierStatus[supplier] === 'done') {
-                supplierStatus[supplier] = 'pending';
-            } else if (supplierStatus[supplier] !== 'active') {
-                supplierStatus[supplier] = 'pending';
-            }
-            alert(`Recontagem solicitada para o produto ${ean}. O fornecedor voltará para a lista de tarefas.`);
-            goHome();
-        }
-
-        // === Função da câmera corrigida ===
-        function startCamera() {
-            if (cameraActive) {
-                stopCamera();
-                setTimeout(() => startCamera(), 500);
-                return;
-            }
-            const container = document.getElementById('camera-container');
-            container.classList.add('active');
-            // Limpa qualquer instância anterior
-            if (html5QrCode) {
-                html5QrCode.stop().catch(() => { });
-                html5QrCode = null;
-            }
-            html5QrCode = new Html5Qrcode("reader");
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            };
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                (decodedText) => {
-                    stopCamera();
-                    lookupEAN(decodedText);
-                },
-                (errorMessage) => {
-                    // Ignora erros contínuos
-                }
-            ).catch(err => {
-                console.error("Erro ao iniciar câmera:", err);
-                alert("Não foi possível acessar a câmera. Verifique as permissões e certifique-se de que a página está sendo acessada via HTTPS.");
-                stopCamera();
-            });
-            cameraActive = true;
-        }
-
-        function stopCamera() {
-            if (html5QrCode && cameraActive) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('camera-container').classList.remove('active');
-                    cameraActive = false;
-                    html5QrCode = null;
-                }).catch(err => {
-                    console.warn("Erro ao parar câmera", err);
-                    document.getElementById('camera-container').classList.remove('active');
-                    cameraActive = false;
-                    html5QrCode = null;
-                });
-            } else {
-                document.getElementById('camera-container').classList.remove('active');
-                cameraActive = false;
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const qtyInput = document.getElementById('qty-input');
-            if (qtyInput) {
-                qtyInput.addEventListener('input', function () {
-                    let val = this.value === '' ? 0 : parseInt(this.value);
-                    if (isNaN(val)) val = 0;
-                    currentQty = val;
-                });
-                qtyInput.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addItem();
-                    }
-                });
-            }
-        });
-
+        /* ─── INIT ─── */
         loadSheet();
     </script>
 </body>
