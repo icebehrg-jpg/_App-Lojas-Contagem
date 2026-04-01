@@ -17,25 +17,25 @@
         }
 
         :root {
-            --bg: #f4f4f0;
+            --bg: #f0f2f5;
             --surface: #ffffff;
-            --border: rgba(0, 0, 0, 0.10);
-            --border-md: rgba(0, 0, 0, 0.18);
-            --text: #1a1a1a;
-            --text-2: #5a5a5a;
-            --text-3: #999;
-            --blue: #1a5fa8;
-            --blue-bg: #e8f0fb;
-            --blue-text: #1a5fa8;
-            --green: #2e7d32;
-            --green-bg: #eaf3e0;
-            --green-text: #2e7d32;
-            --amber: #7a4f00;
-            --amber-bg: #fef3dc;
-            --amber-text: #7a4f00;
-            --red: #b71c1c;
-            --red-bg: #fdecea;
-            --red-text: #b71c1c;
+            --border: #e2e6ea;
+            --border-md: #d0d5da;
+            --text: #1a2c3e;
+            --text-2: #5f6c7a;
+            --text-3: #9aa6b2;
+            --blue: #3b82f6;
+            --blue-bg: #eef2ff;
+            --blue-text: #2563eb;
+            --green: #10b981;
+            --green-bg: #ecfdf5;
+            --green-text: #059669;
+            --amber: #f59e0b;
+            --amber-bg: #fffbeb;
+            --amber-text: #d97706;
+            --red: #ef4444;
+            --red-bg: #fef2f2;
+            --red-text: #dc2626;
             --radius: 12px;
             --radius-sm: 8px;
         }
@@ -61,7 +61,7 @@
 
         .header {
             background: var(--surface);
-            border-bottom: 0.5px solid var(--border);
+            border-bottom: 1px solid var(--border);
             padding: 14px 16px 12px;
             position: sticky;
             top: 0;
@@ -75,13 +75,27 @@
         }
 
         .back-btn {
-            background: none;
+            background: var(--blue-bg);
             border: none;
             cursor: pointer;
-            color: var(--blue);
+            color: var(--blue-text);
             font-size: 14px;
-            padding: 4px 0;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 30px;
             font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #e0e7ff;
+        }
+
+        .back-btn:active {
+            transform: scale(0.96);
         }
 
         .header-title {
@@ -97,7 +111,7 @@
 
         .status-bar {
             background: var(--surface);
-            border-bottom: 0.5px solid var(--border);
+            border-bottom: 1px solid var(--border);
             padding: 6px 16px;
             display: flex;
             justify-content: space-between;
@@ -129,7 +143,7 @@
 
         .task-card {
             background: var(--surface);
-            border: 0.5px solid var(--border);
+            border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 13px 15px;
             display: flex;
@@ -181,7 +195,7 @@
         .scan-box {
             margin: 12px;
             background: var(--surface);
-            border: 0.5px solid var(--border);
+            border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 14px;
             display: flex;
@@ -203,13 +217,13 @@
         .loc-input {
             flex: 1;
             height: 42px;
-            border: 0.5px solid var(--border-md);
+            border: 1px solid var(--border-md);
             border-radius: var(--radius-sm);
             padding: 0 12px;
             font-size: 14px;
             font-family: inherit;
             color: var(--text);
-            background: var(--bg);
+            background: var(--surface);
             outline: none;
         }
 
@@ -217,6 +231,7 @@
         .loc-input:focus,
         .qty-input-field:focus {
             border-color: var(--blue);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
 
         .scan-btn,
@@ -236,7 +251,7 @@
 
         .scan-btn {
             background: var(--surface);
-            border: 0.5px solid var(--border-md);
+            border: 1px solid var(--border-md);
             color: var(--text);
         }
 
@@ -262,7 +277,7 @@
 
         .product-card {
             background: var(--bg);
-            border: 0.5px solid var(--border);
+            border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             padding: 11px 13px;
         }
@@ -306,7 +321,7 @@
             height: 32px;
             border-radius: 50%;
             background: var(--surface);
-            border: 0.5px solid var(--border-md);
+            border: 1px solid var(--border-md);
             font-size: 18px;
             cursor: pointer;
             display: flex;
@@ -321,9 +336,9 @@
             text-align: center;
             font-size: 18px;
             font-weight: 700;
-            border: 0.5px solid var(--border-md);
+            border: 1px solid var(--border-md);
             border-radius: var(--radius-sm);
-            background: var(--bg);
+            background: var(--surface);
             font-family: inherit;
             padding: 0;
         }
@@ -351,7 +366,7 @@
 
         .item-row {
             background: var(--surface);
-            border: 0.5px solid var(--border);
+            border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             padding: 9px 13px;
             display: flex;
@@ -389,7 +404,7 @@
             padding: 20px;
             background: var(--surface);
             border-radius: var(--radius);
-            border: 0.5px solid var(--border);
+            border: 1px solid var(--border);
             text-align: center;
             color: var(--text-2);
             font-size: 14px;
@@ -400,7 +415,7 @@
             padding: 16px;
             background: var(--red-bg);
             border-radius: var(--radius);
-            border: 0.5px solid rgba(183, 28, 28, 0.2);
+            border: 1px solid rgba(220, 38, 38, 0.2);
             color: var(--red-text);
             font-size: 13px;
             line-height: 1.6;
@@ -410,7 +425,7 @@
             margin: 16px 16px 0;
             padding: 14px;
             background: var(--amber-bg);
-            border: 0.5px solid rgba(122, 79, 0, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.2);
             border-radius: var(--radius);
             font-size: 13px;
             color: var(--amber-text);
@@ -441,7 +456,7 @@
 
         .metric-card {
             background: var(--surface);
-            border: 0.5px solid var(--border);
+            border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             padding: 12px 14px;
         }
@@ -472,7 +487,7 @@
             background: var(--surface);
             border-radius: var(--radius);
             overflow: hidden;
-            border: 0.5px solid var(--border);
+            border: 1px solid var(--border);
         }
 
         .manager-table th {
@@ -482,12 +497,12 @@
             color: var(--text-2);
             text-align: left;
             padding: 8px 12px;
-            border-bottom: 0.5px solid var(--border);
+            border-bottom: 1px solid var(--border);
         }
 
         .manager-table td {
             padding: 9px 12px;
-            border-bottom: 0.5px solid var(--border);
+            border-bottom: 1px solid var(--border);
             vertical-align: middle;
         }
 
@@ -495,14 +510,20 @@
             border-bottom: none;
         }
 
-        .diff-ok {
+        /* Cores para diferença */
+        .diff-positive {
             color: var(--green);
             font-weight: 700;
         }
 
-        .diff-warn {
+        .diff-negative {
             color: var(--red);
             font-weight: 700;
+        }
+
+        .diff-zero {
+            color: var(--text);
+            font-weight: 500;
         }
 
         .acerto-btn,
@@ -519,7 +540,7 @@
 
         .acerto-btn {
             background: var(--surface);
-            border: 0.5px solid var(--border-md);
+            border: 1px solid var(--border-md);
             color: var(--text);
         }
 
@@ -532,7 +553,7 @@
 
         .recount-btn {
             background: var(--amber-bg);
-            border: 0.5px solid var(--amber-text);
+            border: 1px solid var(--amber-text);
             color: var(--amber-text);
         }
 
@@ -554,7 +575,7 @@
             border-radius: 99px;
             font-size: 12px;
             font-weight: 500;
-            border: 0.5px solid var(--border-md);
+            border: 1px solid var(--border-md);
             background: var(--surface);
             color: var(--text-2);
             cursor: pointer;
@@ -564,7 +585,7 @@
         .chip.active {
             background: var(--blue-bg);
             color: var(--blue-text);
-            border-color: #8ab4e8;
+            border-color: var(--blue);
         }
 
         .camera-container {
@@ -718,17 +739,17 @@
             <div style="overflow-x:auto;">
                 <table class="manager-table">
                     <thead>
-                        <tr>
-                            <th>Fornecedor</th>
-                            <th>Produto</th>
-                            <th>Sistema</th>
-                            <th>Contagem</th>
-                            <th>Dif.</th>
-                            <th>Ações</th>
-                        </tr>
+                        2?
+                        <th>Fornecedor</th>
+                        <th>Produto</th>
+                        <th>Sistema</th>
+                        <th>Contagem</th>
+                        <th>Dif.</th>
+                        <th>Ações</th>
+                        2?
                     </thead>
                     <tbody id="manager-tbody"></tbody>
-                </table>
+                    2?
             </div>
         </div>
     </div>
@@ -852,7 +873,7 @@
                 html += `</div>`;
             }
             if (done.length === names.length && names.length > 0) {
-                html += `<div style="padding:16px;"><button class="primary-btn" onclick="openManager()" style="background:#1a5fa8;color:#fff;width:100%;height:46px;font-size:15px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-weight:600;">Ver painel gerencial →</button></div>`;
+                html += `<div style="padding:16px;"><button class="primary-btn" onclick="openManager()" style="background:var(--blue);color:#fff;width:100%;height:46px;font-size:15px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-weight:600;">Ver painel gerencial →</button></div>`;
             }
             content.innerHTML = html;
         }
@@ -1024,11 +1045,21 @@
             document.getElementById('supplier-chips').innerHTML = chips;
             const tbody = document.getElementById('manager-tbody');
             tbody.innerHTML = rows.map(r => {
-                const cls = r.diff === 0 ? 'diff-ok' : 'diff-warn';
+                let diffClass = '';
+                if (r.diff > 0) diffClass = 'diff-positive';
+                else if (r.diff < 0) diffClass = 'diff-negative';
+                else diffClass = 'diff-zero';
                 const sign = r.diff > 0 ? '+' : '';
                 const btnAcerto = r.diff === 0 ? `<button class="acerto-btn applied" disabled>Ok</button>` : `<button class="acerto-btn" onclick="applyAcerto(this)">Acertar</button>`;
                 const btnRecount = r.diff !== 0 ? `<button class="recount-btn" onclick="requestRecount('${r.sup}', '${r.ean}')">Recontar</button>` : '';
-                return `<tr data-supplier="${r.sup}"><td>${r.sup}</td><td>${r.desc}</td><td>${r.sistema}</td><td>${r.counted}</td><td class="${cls}">${sign}${r.diff}</td><td>${btnAcerto} ${btnRecount}</td></tr>`;
+                return `<tr data-supplier="${r.sup}">
+                    2<td>${r.sup}</td>
+                    2<td>${r.desc}</td>
+                    2<td>${r.sistema}</td>
+                    2<td>${r.counted}</td>
+                    <td class="${diffClass}">${sign}${r.diff}</td>
+                    2<td>${btnAcerto} ${btnRecount}</td>
+                </tr>`;
             }).join('');
             show('view-manager');
         }
