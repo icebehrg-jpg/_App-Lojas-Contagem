@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Contagem de Estoque</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* =============================================
+     TROCAR_ARQUIVO_URL — linha ~55 no script JS
+     Substitua a constante XLS_URL pelo link
+     direto para download do seu arquivo .xls/.xlsx
+  ============================================= */
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #f4f4f0;
+            --surface: #ffffff;
+            --border: rgba(0, 0, 0, 0.10);
+            --border-md: rgba(0, 0, 0, 0.18);
+            --text: #1a1a1a;
+            --text-2: #5a5a5a;
+            --text-3: #999;
+            --blue: #1a5fa8;
+            --blue-bg: #e8f0fb;
+            --blue-text: #1a5fa8;
+            --green: #2e7d32;
+            --green-bg: #eaf3e0;
+            --green-text: #2e7d32;
+            --amber: #7a4f00;
+            --amber-bg: #fef3dc;
+            --amber-text: #7a4f00;
+            --red: #b71c1c;
+            --red-bg: #fdecea;
+            --red-text: #b71c1c;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100dvh;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        /* ── VIEWS ────────────────────────────────── */
+        .view {
+            display: none;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        /* ── HEADER ───────────────────────────────── */
+        .header {
+            background: var(--surface);
+            border-bottom: 0.5px solid var(--border);
+            padding: 14px 16px 12px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--blue);
+            font-size: 14px;
+            padding: 4px 0;
+            font-family: inherit;
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .header-sub {
+            font-size: 12px;
+            color: var(--text-2);
+            margin-top: 2px;
+        }
+
+        /* ── STATUS BAR ───────────────────────────── */
+        .status-bar {
+            background: var(--surface);
+            border-bottom: 0.5px solid var(--border);
+            padding: 6px 16px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-2);
+        }
+
+        /* ── CONTENT SCROLL ───────────────────────── */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 32px;
+        }
+
+        /* ── SECTION LABEL ────────────────────────── */
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 14px 16px 6px;
+        }
+
+        /* ── TASK CARDS ───────────────────────────── */
+        .task-list {
+            padding: 0 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .task-card {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 13px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .task-card:active {
+            box-shadow: inset 0 0 0 1px var(--border-md);
+        }
+
+        .task-card.disabled {
+            opacity: 0.55;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .task-supplier {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: var(--text-2);
+            margin-top: 3px;
+        }
+
+        /* ── BADGES ───────────────────────────────── */
+        .badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 99px;
+            white-space: nowrap;
+        }
+
+        .badge-pending {
+            background: var(--amber-bg);
+            color: var(--amber-text);
+        }
+
+        .badge-progress {
+            background: var(--blue-bg);
+            color: var(--blue-text);
+        }
+
+        .badge-done {
+            background: var(--green-bg);
+            color: var(--green-text);
+        }
+
+        /* ── SCAN SCREEN ──────────────────────────── */
+        .scan-box {
+            margin: 12px;
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .scan-hint {
+            font-size: 12px;
+            color: var(--text-2);
+        }
+
+        .scan-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .scan-input,
+        .loc-input,
+        .qty-input {
+            flex: 1;
+            height: 42px;
+            border: 0.5px solid var(--border-md);
+            border-radius: var(--radius-sm);
+            padding: 0 12px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text);
+            background: var(--bg);
+            outline: none;
+        }
+
+        .scan-input:focus,
+        .loc-input:focus {
+            border-color: var(--blue);
+        }
+
+        .scan-btn,
+        .add-btn,
+        .finish-btn,
+        .primary-btn {
+            height: 42px;
+            padding: 0 16px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: opacity 0.15s;
+        }
+
+        .scan-btn {
+            background: var(--surface);
+            border: 0.5px solid var(--border-md);
+            color: var(--text);
+        }
+
+        .add-btn,
+        .primary-btn {
+            width: 100%;
+            background: var(--blue);
+            color: #fff;
+        }
+
+        .finish-btn {
+            margin: 4px 12px 0;
+            width: calc(100% - 24px);
+            background: var(--green);
+            color: #fff;
+        }
+
+        .add-btn:active,
+        .finish-btn:active,
+        .primary-btn:active {
+            opacity: 0.8;
+        }
+
+        .product-card {
+            background: var(--bg);
+            border: 0.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 11px 13px;
+        }
+
+        .product-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .product-ean {
+            font-size: 11px;
+            color: var(--text-2);
+            margin-top: 2px;
+        }
+
+        .not-found {
+            color: var(--red-text);
+            font-size: 13px;
+        }
+
+        .qty-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .qty-label {
+            font-size: 13px;
+            color: var(--text-2);
+        }
+
+        .qty-ctrl {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qty-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 0.5px solid var(--border-md);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+        }
+
+        .qty-val {
+            font-size: 18px;
+            font-weight: 700;
+            min-width: 28px;
+            text-align: center;
+        }
+
+        .loc-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .loc-label {
+            font-size: 13px;
+            color: var(--text-2);
+            white-space: nowrap;
+        }
+
+        /* ── ITEMS LIST ───────────────────────────── */
+        .items-list {
+            padding: 0 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .item-row {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 9px 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-name {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .item-meta {
+            font-size: 11px;
+            color: var(--text-2);
+            margin-top: 2px;
+        }
+
+        .item-qty {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--blue);
+            white-space: nowrap;
+            margin-left: 12px;
+        }
+
+        .totals-note {
+            padding: 2px 13px 10px;
+            font-size: 11px;
+            color: var(--text-2);
+        }
+
+        /* ── LOADING / ERROR ──────────────────────── */
+        .loading-box {
+            margin: 32px 16px;
+            padding: 20px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 0.5px solid var(--border);
+            text-align: center;
+            color: var(--text-2);
+            font-size: 14px;
+        }
+
+        .error-box {
+            margin: 20px 16px;
+            padding: 16px;
+            background: var(--red-bg);
+            border-radius: var(--radius);
+            border: 0.5px solid rgba(183, 28, 28, 0.2);
+            color: var(--red-text);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .url-config {
+            margin: 16px 16px 0;
+            padding: 14px;
+            background: var(--amber-bg);
+            border: 0.5px solid rgba(122, 79, 0, 0.2);
+            border-radius: var(--radius);
+            font-size: 13px;
+            color: var(--amber-text);
+            line-height: 1.6;
+        }
+
+        .url-config code {
+            display: block;
+            margin-top: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.06);
+            padding: 6px 10px;
+            border-radius: 6px;
+            word-break: break-all;
+        }
+
+        /* ── DESKTOP OVERLAY (tela do gerente) ────── */
+        #view-manager .content {
+            padding: 16px;
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-2);
+        }
+
+        .metric-val {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .mv-ok {
+            color: var(--green);
+        }
+
+        .mv-warn {
+            color: var(--red);
+        }
+
+        .manager-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 0.5px solid var(--border);
+        }
+
+        .manager-table th {
+            background: var(--bg);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-2);
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .manager-table td {
+            padding: 9px 12px;
+            border-bottom: 0.5px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .manager-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .diff-ok {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .diff-warn {
+            color: var(--red);
+            font-weight: 700;
+        }
+
+        .acerto-btn {
+            height: 28px;
+            padding: 0 12px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: 0.5px solid var(--border-md);
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .acerto-btn.applied {
+            background: var(--green-bg);
+            color: var(--green-text);
+            border-color: transparent;
+            cursor: default;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .chip {
+            height: 28px;
+            padding: 0 13px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 0.5px solid var(--border-md);
+            background: var(--surface);
+            color: var(--text-2);
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .chip.active {
+            background: var(--blue-bg);
+            color: var(--blue-text);
+            border-color: #8ab4e8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ════════════════════════════════════════
+     VIEW 1 — LISTA DE TAREFAS (mobile)
+════════════════════════════════════════ -->
+    <div class="view active" id="view-home">
+        <div class="header">
+            <div class="header-title">Contagem de Estoque</div>
+            <div class="header-sub" id="home-sub">Carregando tarefas...</div>
+        </div>
+        <div class="status-bar">
+            <span id="home-period">Inventário</span>
+            <span id="home-progress">—</span>
+        </div>
+        <div class="content" id="home-content">
+            <div class="loading-box" id="loading-msg">Buscando planilha...</div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     VIEW 2 — CONTAGEM (mobile)
+════════════════════════════════════════ -->
+    <div class="view" id="view-scan">
+        <div class="header">
+            <div class="header-row">
+                <button class="back-btn" onclick="goHome()">← Voltar</button>
+                <div>
+                    <div class="header-title" id="scan-title">—</div>
+                    <div class="header-sub" id="scan-sub">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="scan-box">
+                <div class="scan-hint">Bipe ou digite o EAN do produto</div>
+                <div class="scan-row">
+                    <input class="scan-input" id="ean-input" type="text" inputmode="numeric"
+                        placeholder="EAN / código de barras" />
+                    <button class="scan-btn" onclick="lookupEAN()">Bipar</button>
+                </div>
+                <div id="product-card" style="display:none;"></div>
+                <div id="add-section" style="display:none;">
+                    <div class="qty-row">
+                        <span class="qty-label">Quantidade:</span>
+                        <div class="qty-ctrl">
+                            <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                            <span class="qty-val" id="qty-val">1</span>
+                            <button class="qty-btn" onclick="changeQty(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="loc-row">
+                        <span class="loc-label">Local:</span>
+                        <input class="loc-input" id="loc-input" placeholder="ex: Prateleira A1" />
+                    </div>
+                    <br>
+                    <button class="add-btn" onclick="addItem()">Adicionar contagem</button>
+                </div>
+            </div>
+
+            <div class="section-label">Itens contados nesta sessão</div>
+            <div class="items-list" id="items-list"></div>
+            <div class="totals-note" id="totals-note"></div>
+            <button class="finish-btn" onclick="finishSupplier()">Finalizar contagem deste fornecedor</button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     VIEW 3 — PAINEL GERENCIAL (desktop)
+════════════════════════════════════════ -->
+    <div class="view" id="view-manager">
+        <div class="header">
+            <div class="header-row">
+                <button class="back-btn" onclick="goHome()">← Voltar</button>
+                <div>
+                    <div class="header-title">Painel Gerencial</div>
+                    <div class="header-sub">Revisão de inconsistências</div>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-label">Contados</div>
+                    <div class="metric-val" id="m-total">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Sem diferença</div>
+                    <div class="metric-val mv-ok" id="m-ok">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Inconsistências</div>
+                    <div class="metric-val mv-warn" id="m-warn">—</div>
+                </div>
+            </div>
+            <div class="filter-row" id="supplier-chips"></div>
+            <div style="overflow-x:auto;">
+                <table class="manager-table">
+                    <thead>
+                        <tr>
+                            <th>Fornecedor</th>
+                            <th>Produto</th>
+                            <th>Sistema</th>
+                            <th>Contagem</th>
+                            <th>Dif.</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="manager-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ══════════════════════════════════════════════════════
+           ⬇  CONFIGURAÇÃO  ────────────────────────────────────
+           Substitua a URL abaixo pelo link direto do seu arquivo
+           .xls ou .xlsx hospedado (Google Drive, Dropbox, etc.)
+        
+           Exemplo Google Drive:
+           https://docs.google.com/spreadsheets/d/SEU_ID/export?format=xlsx
+        
+           Exemplo arquivo direto:
+           https://seuservidor.com/planilha/estoque.xlsx
+        ══════════════════════════════════════════════════════ */
+        const XLS_URL = "https://img.kalunga.com.br/Hotsite/teste-app-lojas.xlsx";
+        /* ══════════════════════════════════════════════════════ */
+
+        /* ── Estrutura de dados ── */
+        // suppliers: { nome: { produtos: [{ean, desc, qtdSistema}] } }
+        // counts:    { ean: [ {local, qty} ] }
+        // state:     pendentes / em andamento / finalizadas
+
+        let suppliers = {};       // carregado da planilha
+        let currentSupplier = null;
+        let counts = {};          // ean -> [{local, qty}]
+        let supplierStatus = {};  // nome -> 'pending' | 'active' | 'done'
+        let sessionItems = [];    // itens da sessão atual
+
+        let currentProd = null;
+        let currentQty = 1;
+
+        /* ── Utilitários ── */
+        function show(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function goHome() {
+            renderHome();
+            show('view-home');
+        }
+
+        /* ── Carregar planilha ── */
+        async function loadSheet() {
+            const content = document.getElementById('home-content');
+
+            if (XLS_URL === "TROCAR_ARQUIVO_URL") {
+                content.innerHTML = `
+      <div class="url-config">
+        <strong>Configure o arquivo de estoque</strong><br>
+        Abra este HTML em um editor de texto e substitua a constante na linha indicada:
+        <code>const XLS_URL = "TROCAR_ARQUIVO_URL";</code>
+        Cole o link direto do seu arquivo .xls ou .xlsx no lugar de <em>TROCAR_ARQUIVO_URL</em>.
+      </div>
+      <div class="section-label">Demonstração (dados fictícios)</div>`;
+                loadDemo();
+                return;
+            }
+
+            content.innerHTML = '<div class="loading-box">Buscando planilha...</div>';
+            try {
+                const resp = await fetch(XLS_URL);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const buf = await resp.arrayBuffer();
+                const wb = XLSX.read(buf, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                parseRows(rows);
+                renderHome();
+            } catch (e) {
+                content.innerHTML = `
+      <div class="error-box">
+        <strong>Não foi possível carregar a planilha.</strong><br><br>
+        Verifique se a URL está correta e se o arquivo permite acesso público.<br><br>
+        Erro: ${e.message}
+      </div>`;
+                loadDemo();
+            }
+        }
+
+        /* ── Parser da planilha ──
+           Col 0: fornecedor | Col 1: código | Col 2: descrição | Col 3: qtd sistema (oculto)
+        ──────────────────────────── */
+        function parseRows(rows) {
+            suppliers = {};
+            rows.forEach((r, i) => {
+                if (i === 0) return; // ignora header se houver
+                const sup = String(r[0] || '').trim();
+                const ean = String(r[1] || '').trim();
+                const desc = String(r[2] || '').trim();
+                const qtd = parseFloat(r[3]) || 0;
+                if (!sup || !ean) return;
+                if (!suppliers[sup]) suppliers[sup] = { produtos: [] };
+                suppliers[sup].produtos.push({ ean, desc, qtdSistema: qtd });
+            });
+            Object.keys(suppliers).forEach(s => {
+                if (!supplierStatus[s]) supplierStatus[s] = 'pending';
+            });
+        }
+
+        /* ── Dados de demonstração ── */
+        function loadDemo() {
+            const demo = [
+                ['Unilever', '7891150011267', 'Sabão OMO 1kg', 8],
+                ['Unilever', '7891024143773', 'Dove Shampoo 400ml', 15],
+                ['Unilever', '7891150055291', 'Comfort Azul 2L', 10],
+                ['P&G', '7500435127646', 'Ariel 2kg', 20],
+                ['P&G', '7501001160038', 'Pantene Pro-V 400ml', 12],
+                ['P&G', '7500435311001', 'Downy 1L', 18],
+                ['Nestlé', '7613035352148', 'Nescafé Clássico 100g', 25],
+                ['Nestlé', '7891000315231', 'Leite Moça 395g', 30],
+                ['Ambev', '7891991012072', 'Skol Lata 350ml', 48],
+                ['Ambev', '7891149108683', 'Brahma 600ml', 30],
+            ];
+            parseRows([null, ...demo]);
+            renderHome();
+        }
+
+        /* ── Render tela home ── */
+        function renderHome() {
+            const names = Object.keys(suppliers);
+            const done = names.filter(n => supplierStatus[n] === 'done');
+            const prog = names.filter(n => supplierStatus[n] === 'active');
+            const pend = names.filter(n => supplierStatus[n] === 'pending');
+
+            document.getElementById('home-sub').textContent =
+                `${pend.length + prog.length} tarefa(s) pendente(s)`;
+            document.getElementById('home-progress').textContent =
+                `${done.length} de ${names.length} concluídas`;
+
+            const content = document.getElementById('home-content');
+            let html = '';
+
+            if (XLS_URL === "TROCAR_ARQUIVO_URL") {
+                html += `<div class="url-config">
+      <strong>Modo demonstração</strong> — dados fictícios carregados.<br>
+      Substitua <code>TROCAR_ARQUIVO_URL</code> no código pelo link da sua planilha.
+    </div>`;
+            }
+
+            if (prog.length) {
+                html += `<div class="section-label">Em andamento</div><div class="task-list">`;
+                prog.forEach(n => html += taskCard(n, 'progress'));
+                html += `</div>`;
+            }
+
+            if (pend.length) {
+                html += `<div class="section-label">Pendentes</div><div class="task-list">`;
+                pend.forEach(n => html += taskCard(n, 'pending'));
+                html += `</div>`;
+            }
+
+            if (done.length) {
+                html += `<div class="section-label">Concluídas</div><div class="task-list">`;
+                done.forEach(n => html += taskCard(n, 'done'));
+                html += `</div>`;
+            }
+
+            if (done.length === names.length && names.length > 0) {
+                html += `<div style="padding:16px;">
+      <button class="primary-btn" onclick="openManager()" style="background:#1a5fa8;color:#fff;width:100%;height:46px;font-size:15px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-weight:600;">
+        Ver painel gerencial →
+      </button>
+    </div>`;
+            }
+
+            content.innerHTML = html;
+        }
+
+        function taskCard(name, status) {
+            const p = suppliers[name].produtos.length;
+            const labels = { pending: 'Pendente', active: 'Em andamento', done: 'Concluída' };
+            const cls = { pending: 'badge-pending', active: 'badge-progress', done: 'badge-done' };
+            const dis = status === 'done' ? ' disabled' : '';
+            const click = status !== 'done' ? `onclick="openScan('${name.replace(/'/g, "\\'")}', this)"` : '';
+            return `<div class="task-card${dis ? ' disabled' : ''}" ${click}>
+    <div>
+      <div class="task-supplier">${name}</div>
+      <div class="task-meta">${p} produto(s)</div>
+    </div>
+    <span class="badge ${cls[status]}">${labels[status]}</span>
+  </div>`;
+        }
+
+        /* ── Tela de bipagem ── */
+        function openScan(name) {
+            currentSupplier = name;
+            sessionItems = [];
+            currentProd = null;
+            currentQty = 1;
+            supplierStatus[name] = 'active';
+
+            const prods = suppliers[name].produtos;
+            document.getElementById('scan-title').textContent = name;
+            document.getElementById('scan-sub').textContent = `${prods.length} produto(s) na lista`;
+            document.getElementById('ean-input').value = '';
+            document.getElementById('product-card').style.display = 'none';
+            document.getElementById('add-section').style.display = 'none';
+            document.getElementById('qty-val').textContent = '1';
+            document.getElementById('loc-input').value = '';
+            document.getElementById('items-list').innerHTML = '';
+            document.getElementById('totals-note').textContent = '';
+
+            show('view-scan');
+        }
+
+        function lookupEAN() {
+            const ean = document.getElementById('ean-input').value.trim();
+            if (!ean) return;
+
+            const prods = suppliers[currentSupplier]?.produtos || [];
+            const found = prods.find(p => p.ean === ean);
+
+            const card = document.getElementById('product-card');
+            const sec = document.getElementById('add-section');
+
+            if (found) {
+                currentProd = found;
+                currentQty = 1;
+                document.getElementById('qty-val').textContent = '1';
+                card.innerHTML = `<div class="product-card">
+      <div class="product-name">${found.desc}</div>
+      <div class="product-ean">EAN: ${found.ean}</div>
+    </div>`;
+                sec.style.display = 'block';
+            } else {
+                currentProd = null;
+                card.innerHTML = `<div class="product-card">
+      <div class="not-found">EAN não encontrado na lista deste fornecedor.</div>
+      <div class="product-ean">EAN: ${ean}</div>
+    </div>`;
+                sec.style.display = 'none';
+            }
+            card.style.display = 'block';
+        }
+
+        // Permitir Enter no campo EAN
+        document.getElementById('ean-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') lookupEAN();
+        });
+
+        function changeQty(delta) {
+            currentQty = Math.max(1, currentQty + delta);
+            document.getElementById('qty-val').textContent = currentQty;
+        }
+
+        function addItem() {
+            if (!currentProd) return;
+            const loc = document.getElementById('loc-input').value.trim() || 'Sem local';
+            sessionItems.push({ ean: currentProd.ean, desc: currentProd.desc, qty: currentQty, local: loc });
+
+            if (!counts[currentProd.ean]) counts[currentProd.ean] = [];
+            counts[currentProd.ean].push({ local: loc, qty: currentQty });
+
+            renderItemsList();
+            document.getElementById('ean-input').value = '';
+            document.getElementById('loc-input').value = '';
+            document.getElementById('product-card').style.display = 'none';
+            document.getElementById('add-section').style.display = 'none';
+            currentProd = null;
+            currentQty = 1;
+            document.getElementById('qty-val').textContent = '1';
+            document.getElementById('ean-input').focus();
+        }
+
+        function renderItemsList() {
+            const list = document.getElementById('items-list');
+            list.innerHTML = sessionItems.map(it =>
+                `<div class="item-row">
+      <div><div class="item-name">${it.desc}</div><div class="item-meta">EAN ${it.ean} · ${it.local}</div></div>
+      <div class="item-qty">${it.qty} un</div>
+    </div>`
+            ).join('');
+
+            // Totais por EAN
+            const totMap = {};
+            sessionItems.forEach(it => { totMap[it.ean] = (totMap[it.ean] || 0) + it.qty; });
+            const multi = Object.entries(totMap).filter(([, v]) => v > 0);
+            document.getElementById('totals-note').innerHTML =
+                multi.map(([ean, tot]) => {
+                    const prod = (suppliers[currentSupplier]?.produtos || []).find(p => p.ean === ean);
+                    return `<strong>${prod?.desc || ean}:</strong> total somado = ${tot} un`;
+                }).join(' &nbsp;·&nbsp; ');
+        }
+
+        function finishSupplier() {
+            supplierStatus[currentSupplier] = 'done';
+            goHome();
+        }
+
+        /* ── Painel Gerencial ── */
+        function openManager() {
+            const names = Object.keys(suppliers);
+            let total = 0, ok = 0, warn = 0;
+            const rows = [];
+
+            names.forEach(sup => {
+                suppliers[sup].produtos.forEach(p => {
+                    const counted = (counts[p.ean] || []).reduce((s, c) => s + c.qty, 0);
+                    const diff = counted - p.qtdSistema;
+                    total++;
+                    if (diff === 0) ok++; else warn++;
+                    rows.push({ sup, desc: p.desc, sistema: p.qtdSistema, counted, diff });
+                });
+            });
+
+            document.getElementById('m-total').textContent = total;
+            document.getElementById('m-ok').textContent = ok;
+            document.getElementById('m-warn').textContent = warn;
+
+            // chips de fornecedor
+            const chips = `<button class="chip active" onclick="filterMgr(this,'Todos')">Todos</button>` +
+                names.map(n => `<button class="chip" onclick="filterMgr(this,'${n.replace(/'/g, "\\'")}\")">${n}</button>`).join('');
+            document.getElementById('supplier-chips').innerHTML = chips;
+
+            const tbody = document.getElementById('manager-tbody');
+            tbody.innerHTML = rows.map(r => {
+                const cls = r.diff === 0 ? 'diff-ok' : 'diff-warn';
+                const sign = r.diff > 0 ? '+' : '';
+                const btn = r.diff === 0
+                    ? `<button class="acerto-btn applied" disabled>Ok</button>`
+                    : `<button class="acerto-btn" onclick="applyAcerto(this)">Acertar</button>`;
+                return `<tr data-supplier="${r.sup}">
+      <td>${r.sup}</td>
+      <td>${r.desc}</td>
+      <td>${r.sistema}</td>
+      <td>${r.counted}</td>
+      <td class="${cls}">${sign}${r.diff}</td>
+      <td>${btn}</td>
+    </tr>`;
+            }).join('');
+
+            show('view-manager');
+        }
+
+        function filterMgr(chip, supplier) {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            document.querySelectorAll('#manager-tbody tr').forEach(tr => {
+                tr.style.display = (supplier === 'Todos' || tr.dataset.supplier === supplier) ? '' : 'none';
+            });
+        }
+
+        function applyAcerto(btn) {
+            btn.textContent = 'Acertado';
+            btn.className = 'acerto-btn applied';
+            btn.disabled = true;
+            const warn = document.querySelectorAll('.acerto-btn:not(.applied)').length;
+            document.getElementById('m-warn').textContent = warn;
+        }
+
+        /* ── Init ── */
+        loadSheet();
+    </script>
+</body>
+
+</html>
