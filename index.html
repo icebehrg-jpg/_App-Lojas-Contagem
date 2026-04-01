@@ -990,11 +990,17 @@
             document.getElementById('items-list').innerHTML = '';
             document.getElementById('totals-note').textContent = '';
             show('view-scan');
+
+            // Foco sem teclado
+            const eanInput = document.getElementById('ean-input');
+            eanInput.focus();
+            eanInput.readOnly = true;
+            setTimeout(() => {
+                eanInput.readOnly = false;
+            }, 200);
         }
 
-        function lookupEAN() {
-            const ean = document.getElementById('ean-input').value.trim();
-            if (!ean) return;
+        function findProductByCode(code) {
             const prods = suppliers[currentSupplier]?.produtos || [];
             const found = prods.find(p => p.ean === ean);
             const card = document.getElementById('product-card');
@@ -1039,9 +1045,14 @@
             document.getElementById('loc-input').value = '';
             document.getElementById('product-card').style.display = 'none';
             document.getElementById('add-section').style.display = 'none';
-            currentProd = null; currentQty = 1;
-            document.getElementById('qty-val').textContent = '1';
-            document.getElementById('ean-input').focus();
+            currentProd = null;
+            qtyInput.value = '';
+            currentQty = 1;
+            // Foco sem teclado novamente
+            const eanInput = document.getElementById('ean-input');
+            eanInput.focus();
+            eanInput.readOnly = true;
+            setTimeout(() => { eanInput.readOnly = false; }, 200);
         }
 
         function renderItemsList() {
@@ -1116,11 +1127,100 @@
         }
 
         function applyAcerto(btn) {
-            btn.textContent = 'Acertado'; btn.className = 'acerto-btn applied'; btn.disabled = true;
-            document.getElementById('m-warn').textContent = document.querySelectorAll('.acerto-btn:not(.applied)').length;
+            btn.textContent = 'Acertado';
+            btn.className = 'acerto-btn applied';
+            btn.disabled = true;
+            const warn = document.querySelectorAll('.acerto-btn:not(.applied)').length;
+            document.getElementById('m-warn').textContent = warn;
         }
 
-        /* ─── INIT ─── */
+        function requestRecount(supplier, ean) {
+            if (!recountRequests[supplier]) recountRequests[supplier] = [];
+            if (!recountRequests[supplier].includes(ean)) {
+                recountRequests[supplier].push(ean);
+            }
+            if (supplierStatus[supplier] === 'done') {
+                supplierStatus[supplier] = 'pending';
+            } else if (supplierStatus[supplier] !== 'active') {
+                supplierStatus[supplier] = 'pending';
+            }
+            alert(`Recontagem solicitada para o produto ${ean}. O fornecedor voltará para a lista de tarefas.`);
+            goHome();
+        }
+
+        function startCamera() {
+            if (cameraActive) {
+                stopCamera();
+                // Pequeno atraso para garantir que a câmera foi liberada
+                setTimeout(() => startCamera(), 300);
+                return;
+            }
+            const container = document.getElementById('camera-container');
+            container.classList.add('active');
+            // Limpa qualquer instância anterior
+            if (html5QrCode) {
+                html5QrCode.stop().catch(() => { });
+                html5QrCode = null;
+            }
+            html5QrCode = new Html5Qrcode("reader");
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText) => {
+                    stopCamera();
+                    lookupEAN(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignora erros contínuos
+                }
+            ).catch(err => {
+                console.error("Erro ao iniciar câmera:", err);
+                alert("Não foi possível acessar a câmera. Verifique as permissões e certifique-se de que a página está sendo acessada via HTTPS.");
+                stopCamera();
+            });
+            cameraActive = true;
+        }
+
+        function stopCamera() {
+            if (html5QrCode && cameraActive) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('camera-container').classList.remove('active');
+                    cameraActive = false;
+                    html5QrCode = null;
+                }).catch(err => {
+                    console.warn("Erro ao parar câmera", err);
+                    document.getElementById('camera-container').classList.remove('active');
+                    cameraActive = false;
+                    html5QrCode = null;
+                });
+            } else {
+                document.getElementById('camera-container').classList.remove('active');
+                cameraActive = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const qtyInput = document.getElementById('qty-input');
+            if (qtyInput) {
+                qtyInput.addEventListener('input', function () {
+                    let val = this.value === '' ? 0 : parseInt(this.value);
+                    if (isNaN(val)) val = 0;
+                    currentQty = val;
+                });
+                qtyInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addItem();
+                    }
+                });
+            }
+        });
+
         loadSheet();
     </script>
 </body>
