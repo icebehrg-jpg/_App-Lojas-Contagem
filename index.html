@@ -8,6 +8,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
+        /* =============================================
+     TROCAR_ARQUIVO_URL — linha ~55 no script JS
+     Substitua a constante XLS_URL pelo link
+     direto para download do seu arquivo .xls/.xlsx
+  ============================================= */
+
         *,
         *::before,
         *::after {
@@ -729,17 +735,17 @@
             <div style="overflow-x:auto;">
                 <table class="manager-table">
                     <thead>
-                        <tr>
-                            <th>Fornecedor</th>
-                            <th>Produto</th>
-                            <th>Sistema</th>
-                            <th>Contagem</th>
-                            <th>Dif.</th>
-                            <th>Ações</th>
-                        </tr>
+                        2?
+                        <th>Fornecedor</th>
+                        <th>Produto</th>
+                        <th>Sistema</th>
+                        <th>Contagem</th>
+                        <th>Dif.</th>
+                        <th>Ações</th>
+                        2?
                     </thead>
                     <tbody id="manager-tbody"></tbody>
-                </table>
+                    2?
             </div>
         </div>
     </div>
@@ -914,10 +920,13 @@
 
             show('view-scan');
 
+            // Foca no campo EAN sem abrir teclado
             const eanInput = document.getElementById('ean-input');
             eanInput.focus();
             eanInput.readOnly = true;
-            setTimeout(() => { eanInput.readOnly = false; }, 200);
+            setTimeout(() => {
+                eanInput.readOnly = false; // permite digitar após toque
+            }, 200);
         }
 
         function findProductByCode(code) {
@@ -945,7 +954,7 @@
                 currentQty = 1;
                 card.innerHTML = `<div class="product-card"><div class="product-name">${found.desc}</div><div class="product-ean">EAN: ${found.ean}</div></div>`;
                 sec.style.display = 'block';
-                qtyInput.focus();
+                qtyInput.focus(); // abre teclado para quantidade
             } else {
                 currentProd = null;
                 card.innerHTML = `<div class="product-card"><div class="not-found">Código não encontrado na lista deste fornecedor.</div><div class="product-ean">Código: ${code}</div></div>`;
@@ -995,6 +1004,10 @@
             qtyInput.value = '';
             currentQty = 1;
             document.getElementById('ean-input').focus();
+            // Mantém o comportamento: foco sem teclado novamente
+            const eanInput = document.getElementById('ean-input');
+            eanInput.readOnly = true;
+            setTimeout(() => { eanInput.readOnly = false; }, 200);
         }
 
         function renderItemsList() {
@@ -1043,13 +1056,13 @@
                 const btnAcerto = r.diff === 0 ? `<button class="acerto-btn applied" disabled>Ok</button>` : `<button class="acerto-btn" onclick="applyAcerto(this)">Acertar</button>`;
                 const btnRecount = r.diff !== 0 ? `<button class="recount-btn" onclick="requestRecount('${r.sup}', '${r.ean}')">Recontar</button>` : '';
                 return `<tr data-supplier="${r.sup}">
-                    <td>${r.sup}</td>
-                    <td>${r.desc}</td>
-                    <td>${r.sistema}</td>
-                    <td>${r.counted}</td>
+                    2<td>${r.sup}</td>
+                    2<td>${r.desc}</td>
+                    2<td>${r.sistema}</td>
+                    2<td>${r.counted}</td>
                     <td class="${diffClass}">${sign}${r.diff}</td>
-                    <td>${btnAcerto} ${btnRecount}</td>
-                </tr>`;
+                    2<td>${btnAcerto} ${btnRecount}</td>
+                2?`;
             }).join('');
             show('view-manager');
         }
@@ -1088,29 +1101,17 @@
             if (cameraActive) return;
             const container = document.getElementById('camera-container');
             container.classList.add('active');
-            // Limpa qualquer instância anterior
             if (html5QrCode) {
                 html5QrCode.stop().then(() => {
                     html5QrCode = null;
                 }).catch(() => { });
             }
             html5QrCode = new Html5Qrcode("reader");
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            };
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                (decodedText) => {
-                    stopCamera();
-                    lookupEAN(decodedText);
-                },
-                (errorMessage) => {
-                    // Ignora erros contínuos de leitura
-                }
-            ).catch(err => {
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                stopCamera();
+                lookupEAN(decodedText);
+            }, (errorMessage) => { }).catch(err => {
                 console.error("Erro ao iniciar câmera:", err);
                 alert("Não foi possível acessar a câmera. Verifique as permissões e certifique-se de que a página está sendo acessada via HTTPS.");
                 stopCamera();
