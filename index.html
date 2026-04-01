@@ -6,13 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Contagem de Estoque</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        /* =============================================
-     TROCAR_ARQUIVO_URL — linha ~55 no script JS
-     Substitua a constante XLS_URL pelo link
-     direto para download do seu arquivo .xls/.xlsx
-  ============================================= */
-
         *,
         *::before,
         *::after {
@@ -54,7 +49,6 @@
             line-height: 1.5;
         }
 
-        /* ── VIEWS ────────────────────────────────── */
         .view {
             display: none;
             flex-direction: column;
@@ -65,7 +59,6 @@
             display: flex;
         }
 
-        /* ── HEADER ───────────────────────────────── */
         .header {
             background: var(--surface);
             border-bottom: 0.5px solid var(--border);
@@ -102,7 +95,6 @@
             margin-top: 2px;
         }
 
-        /* ── STATUS BAR ───────────────────────────── */
         .status-bar {
             background: var(--surface);
             border-bottom: 0.5px solid var(--border);
@@ -113,14 +105,12 @@
             color: var(--text-2);
         }
 
-        /* ── CONTENT SCROLL ───────────────────────── */
         .content {
             flex: 1;
             overflow-y: auto;
             padding-bottom: 32px;
         }
 
-        /* ── SECTION LABEL ────────────────────────── */
         .section-label {
             font-size: 11px;
             font-weight: 600;
@@ -130,7 +120,6 @@
             padding: 14px 16px 6px;
         }
 
-        /* ── TASK CARDS ───────────────────────────── */
         .task-list {
             padding: 0 12px;
             display: flex;
@@ -166,13 +155,6 @@
             font-weight: 600;
         }
 
-        .task-meta {
-            font-size: 12px;
-            color: var(--text-2);
-            margin-top: 3px;
-        }
-
-        /* ── BADGES ───────────────────────────────── */
         .badge {
             font-size: 11px;
             font-weight: 600;
@@ -196,7 +178,6 @@
             color: var(--green-text);
         }
 
-        /* ── SCAN SCREEN ──────────────────────────── */
         .scan-box {
             margin: 12px;
             background: var(--surface);
@@ -219,8 +200,7 @@
         }
 
         .scan-input,
-        .loc-input,
-        .qty-input {
+        .loc-input {
             flex: 1;
             height: 42px;
             border: 0.5px solid var(--border-md);
@@ -234,7 +214,8 @@
         }
 
         .scan-input:focus,
-        .loc-input:focus {
+        .loc-input:focus,
+        .qty-input-field:focus {
             border-color: var(--blue);
         }
 
@@ -334,11 +315,17 @@
             color: var(--text);
         }
 
-        .qty-val {
+        .qty-input-field {
+            width: 70px;
+            height: 40px;
+            text-align: center;
             font-size: 18px;
             font-weight: 700;
-            min-width: 28px;
-            text-align: center;
+            border: 0.5px solid var(--border-md);
+            border-radius: var(--radius-sm);
+            background: var(--bg);
+            font-family: inherit;
+            padding: 0;
         }
 
         .loc-row {
@@ -354,7 +341,6 @@
             white-space: nowrap;
         }
 
-        /* ── ITEMS LIST ───────────────────────────── */
         .items-list {
             padding: 0 12px;
             display: flex;
@@ -398,7 +384,6 @@
             color: var(--text-2);
         }
 
-        /* ── LOADING / ERROR ──────────────────────── */
         .loading-box {
             margin: 32px 16px;
             padding: 20px;
@@ -443,7 +428,6 @@
             word-break: break-all;
         }
 
-        /* ── DESKTOP OVERLAY (tela do gerente) ────── */
         #view-manager .content {
             padding: 16px;
         }
@@ -521,17 +505,22 @@
             font-weight: 700;
         }
 
-        .acerto-btn {
+        .acerto-btn,
+        .recount-btn {
             height: 28px;
             padding: 0 12px;
             font-size: 11px;
             font-weight: 600;
             border-radius: var(--radius-sm);
-            border: 0.5px solid var(--border-md);
-            background: var(--surface);
-            color: var(--text);
             cursor: pointer;
             font-family: inherit;
+            margin: 0 2px;
+        }
+
+        .acerto-btn {
+            background: var(--surface);
+            border: 0.5px solid var(--border-md);
+            color: var(--text);
         }
 
         .acerto-btn.applied {
@@ -539,6 +528,17 @@
             color: var(--green-text);
             border-color: transparent;
             cursor: default;
+        }
+
+        .recount-btn {
+            background: var(--amber-bg);
+            border: 0.5px solid var(--amber-text);
+            color: var(--amber-text);
+        }
+
+        .recount-btn:hover {
+            background: var(--amber);
+            color: white;
         }
 
         .filter-row {
@@ -566,14 +566,70 @@
             color: var(--blue-text);
             border-color: #8ab4e8;
         }
+
+        .camera-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .camera-container.active {
+            display: flex;
+        }
+
+        #reader {
+            width: 100%;
+            max-width: 500px;
+            background: #000;
+        }
+
+        .close-camera {
+            background: #fff;
+            border: none;
+            padding: 12px 24px;
+            margin-top: 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .recount-alert {
+            background: var(--red-bg);
+            border-left: 4px solid var(--red);
+            padding: 10px 12px;
+            margin: 0 12px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+
+        .recount-alert strong {
+            color: var(--red-text);
+        }
+
+        .recount-list {
+            margin-top: 6px;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .recount-list li {
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 4px;
+        }
     </style>
 </head>
 
 <body>
 
-    <!-- ════════════════════════════════════════
-     VIEW 1 — LISTA DE TAREFAS (mobile)
-════════════════════════════════════════ -->
     <div class="view active" id="view-home">
         <div class="header">
             <div class="header-title">Contagem de Estoque</div>
@@ -588,9 +644,6 @@
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════
-     VIEW 2 — CONTAGEM (mobile)
-════════════════════════════════════════ -->
     <div class="view" id="view-scan">
         <div class="header">
             <div class="header-row">
@@ -605,9 +658,9 @@
             <div class="scan-box">
                 <div class="scan-hint">Bipe ou digite o EAN do produto</div>
                 <div class="scan-row">
-                    <input class="scan-input" id="ean-input" type="text" inputmode="numeric"
+                    <input class="scan-input" id="ean-input" type="text" inputmode="none"
                         placeholder="EAN / código de barras" />
-                    <button class="scan-btn" onclick="lookupEAN()">Bipar</button>
+                    <button class="scan-btn" id="scan-camera-btn" onclick="startCamera()">📷 Bipar</button>
                 </div>
                 <div id="product-card" style="display:none;"></div>
                 <div id="add-section" style="display:none;">
@@ -615,7 +668,8 @@
                         <span class="qty-label">Quantidade:</span>
                         <div class="qty-ctrl">
                             <button class="qty-btn" onclick="changeQty(-1)">−</button>
-                            <span class="qty-val" id="qty-val">1</span>
+                            <input type="number" id="qty-input" class="qty-input-field" value="" min="1" step="1"
+                                placeholder="1" />
                             <button class="qty-btn" onclick="changeQty(1)">+</button>
                         </div>
                     </div>
@@ -635,9 +689,6 @@
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════
-     VIEW 3 — PAINEL GERENCIAL (desktop)
-════════════════════════════════════════ -->
     <div class="view" id="view-manager">
         <div class="header">
             <div class="header-row">
@@ -667,78 +718,58 @@
             <div style="overflow-x:auto;">
                 <table class="manager-table">
                     <thead>
-                        <tr>
-                            <th>Fornecedor</th>
-                            <th>Produto</th>
-                            <th>Sistema</th>
-                            <th>Contagem</th>
-                            <th>Dif.</th>
-                            <th>Ação</th>
-                        </tr>
+                        2?
+                        <th>Fornecedor</th>
+                        <th>Produto</th>
+                        <th>Sistema</th>
+                        <th>Contagem</th>
+                        <th>Dif.</th>
+                        <th>Ações</th>
+                        2?
                     </thead>
                     <tbody id="manager-tbody"></tbody>
-                </table>
+                    2?
             </div>
         </div>
     </div>
 
+    <div id="camera-container" class="camera-container">
+        <div id="reader" style="width: 100%; max-width: 500px;"></div>
+        <button class="close-camera" onclick="stopCamera()">Fechar câmera</button>
+    </div>
+
     <script>
-        /* ══════════════════════════════════════════════════════
-           ⬇  CONFIGURAÇÃO  ────────────────────────────────────
-           Substitua a URL abaixo pelo link direto do seu arquivo
-           .xls ou .xlsx hospedado (Google Drive, Dropbox, etc.)
-        
-           Exemplo Google Drive:
-           https://docs.google.com/spreadsheets/d/SEU_ID/export?format=xlsx
-        
-           Exemplo arquivo direto:
-           https://seuservidor.com/planilha/estoque.xlsx
-        ══════════════════════════════════════════════════════ */
         const XLS_URL = "https://img.kalunga.com.br/Hotsite/teste-app-lojas.xlsx";
-        /* ══════════════════════════════════════════════════════ */
 
-        /* ── Estrutura de dados ── */
-        // suppliers: { nome: { produtos: [{ean, desc, qtdSistema}] } }
-        // counts:    { ean: [ {local, qty} ] }
-        // state:     pendentes / em andamento / finalizadas
-
-        let suppliers = {};       // carregado da planilha
+        let suppliers = {};
         let currentSupplier = null;
-        let counts = {};          // ean -> [{local, qty}]
-        let supplierStatus = {};  // nome -> 'pending' | 'active' | 'done'
-        let sessionItems = [];    // itens da sessão atual
-
+        let counts = {};
+        let supplierStatus = {};
+        let sessionItems = [];
         let currentProd = null;
         let currentQty = 1;
+        let recountRequests = {};
+        let html5QrCode = null;
+        let cameraActive = false;
 
-        /* ── Utilitários ── */
         function show(id) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
 
         function goHome() {
+            if (cameraActive) stopCamera();
             renderHome();
             show('view-home');
         }
 
-        /* ── Carregar planilha ── */
         async function loadSheet() {
             const content = document.getElementById('home-content');
-
             if (XLS_URL === "TROCAR_ARQUIVO_URL") {
-                content.innerHTML = `
-      <div class="url-config">
-        <strong>Configure o arquivo de estoque</strong><br>
-        Abra este HTML em um editor de texto e substitua a constante na linha indicada:
-        <code>const XLS_URL = "TROCAR_ARQUIVO_URL";</code>
-        Cole o link direto do seu arquivo .xls ou .xlsx no lugar de <em>TROCAR_ARQUIVO_URL</em>.
-      </div>
-      <div class="section-label">Demonstração (dados fictícios)</div>`;
+                content.innerHTML = `<div class="url-config"><strong>Configure o arquivo de estoque</strong><br>Abra este HTML em um editor de texto e substitua a constante na linha indicada:<code>const XLS_URL = "TROCAR_ARQUIVO_URL";</code>Cole o link direto do seu arquivo .xls ou .xlsx no lugar de <em>TROCAR_ARQUIVO_URL</em>.</div><div class="section-label">Demonstração (dados fictícios)</div>`;
                 loadDemo();
                 return;
             }
-
             content.innerHTML = '<div class="loading-box">Buscando planilha...</div>';
             try {
                 const resp = await fetch(XLS_URL);
@@ -750,127 +781,100 @@
                 parseRows(rows);
                 renderHome();
             } catch (e) {
-                content.innerHTML = `
-      <div class="error-box">
-        <strong>Não foi possível carregar a planilha.</strong><br><br>
-        Verifique se a URL está correta e se o arquivo permite acesso público.<br><br>
-        Erro: ${e.message}
-      </div>`;
+                content.innerHTML = `<div class="error-box"><strong>Não foi possível carregar a planilha.</strong><br><br>Verifique se a URL está correta e se o arquivo permite acesso público.<br><br>Erro: ${e.message}</div>`;
                 loadDemo();
             }
         }
 
-        /* ── Parser da planilha ──
-           Col 0: fornecedor | Col 1: código | Col 2: descrição | Col 3: qtd sistema (oculto)
-        ──────────────────────────── */
         function parseRows(rows) {
             suppliers = {};
             rows.forEach((r, i) => {
-                if (i === 0) return; // ignora header se houver
+                if (i === 0) return;
                 const sup = String(r[0] || '').trim();
                 const ean = String(r[1] || '').trim();
                 const desc = String(r[2] || '').trim();
                 const qtd = parseFloat(r[3]) || 0;
+                const codAlternativo = r[4] ? String(r[4]).trim() : '';
                 if (!sup || !ean) return;
                 if (!suppliers[sup]) suppliers[sup] = { produtos: [] };
-                suppliers[sup].produtos.push({ ean, desc, qtdSistema: qtd });
+                suppliers[sup].produtos.push({ ean, codAlternativo, desc, qtdSistema: qtd });
             });
             Object.keys(suppliers).forEach(s => {
                 if (!supplierStatus[s]) supplierStatus[s] = 'pending';
+                if (!recountRequests[s]) recountRequests[s] = [];
             });
         }
 
-        /* ── Dados de demonstração ── */
         function loadDemo() {
             const demo = [
-                ['Unilever', '7891150011267', 'Sabão OMO 1kg', 8],
-                ['Unilever', '7891024143773', 'Dove Shampoo 400ml', 15],
-                ['Unilever', '7891150055291', 'Comfort Azul 2L', 10],
-                ['P&G', '7500435127646', 'Ariel 2kg', 20],
-                ['P&G', '7501001160038', 'Pantene Pro-V 400ml', 12],
-                ['P&G', '7500435311001', 'Downy 1L', 18],
-                ['Nestlé', '7613035352148', 'Nescafé Clássico 100g', 25],
-                ['Nestlé', '7891000315231', 'Leite Moça 395g', 30],
-                ['Ambev', '7891991012072', 'Skol Lata 350ml', 48],
-                ['Ambev', '7891149108683', 'Brahma 600ml', 30],
+                ['Unilever', '7891150011267', 'Sabão OMO 1kg', 8, ''],
+                ['Unilever', '7891024143773', 'Dove Shampoo 400ml', 15, ''],
+                ['Unilever', '7891150055291', 'Comfort Azul 2L', 10, ''],
+                ['P&G', '7500435127646', 'Ariel 2kg', 20, ''],
+                ['P&G', '7501001160038', 'Pantene Pro-V 400ml', 12, ''],
+                ['P&G', '7500435311001', 'Downy 1L', 18, ''],
+                ['Nestlé', '7613035352148', 'Nescafé Clássico 100g', 25, ''],
+                ['Nestlé', '7891000315231', 'Leite Moça 395g', 30, ''],
+                ['Ambev', '7891991012072', 'Skol Lata 350ml', 48, ''],
+                ['Ambev', '7891149108683', 'Brahma 600ml', 30, ''],
             ];
             parseRows([null, ...demo]);
             renderHome();
         }
 
-        /* ── Render tela home ── */
         function renderHome() {
             const names = Object.keys(suppliers);
             const done = names.filter(n => supplierStatus[n] === 'done');
             const prog = names.filter(n => supplierStatus[n] === 'active');
             const pend = names.filter(n => supplierStatus[n] === 'pending');
 
-            document.getElementById('home-sub').textContent =
-                `${pend.length + prog.length} tarefa(s) pendente(s)`;
-            document.getElementById('home-progress').textContent =
-                `${done.length} de ${names.length} concluídas`;
+            document.getElementById('home-sub').textContent = `${pend.length + prog.length} tarefa(s) pendente(s)`;
+            document.getElementById('home-progress').textContent = `${done.length} de ${names.length} concluídas`;
 
             const content = document.getElementById('home-content');
             let html = '';
-
             if (XLS_URL === "TROCAR_ARQUIVO_URL") {
-                html += `<div class="url-config">
-      <strong>Modo demonstração</strong> — dados fictícios carregados.<br>
-      Substitua <code>TROCAR_ARQUIVO_URL</code> no código pelo link da sua planilha.
-    </div>`;
+                html += `<div class="url-config"><strong>Modo demonstração</strong> — dados fictícios carregados.<br>Substitua <code>TROCAR_ARQUIVO_URL</code> no código pelo link da sua planilha.</div>`;
             }
-
             if (prog.length) {
                 html += `<div class="section-label">Em andamento</div><div class="task-list">`;
-                prog.forEach(n => html += taskCard(n, 'progress'));
+                prog.forEach(n => html += taskCard(n, 'active'));
                 html += `</div>`;
             }
-
             if (pend.length) {
                 html += `<div class="section-label">Pendentes</div><div class="task-list">`;
                 pend.forEach(n => html += taskCard(n, 'pending'));
                 html += `</div>`;
             }
-
             if (done.length) {
                 html += `<div class="section-label">Concluídas</div><div class="task-list">`;
                 done.forEach(n => html += taskCard(n, 'done'));
                 html += `</div>`;
             }
-
             if (done.length === names.length && names.length > 0) {
-                html += `<div style="padding:16px;">
-      <button class="primary-btn" onclick="openManager()" style="background:#1a5fa8;color:#fff;width:100%;height:46px;font-size:15px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-weight:600;">
-        Ver painel gerencial →
-      </button>
-    </div>`;
+                html += `<div style="padding:16px;"><button class="primary-btn" onclick="openManager()" style="background:#1a5fa8;color:#fff;width:100%;height:46px;font-size:15px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-weight:600;">Ver painel gerencial →</button></div>`;
             }
-
             content.innerHTML = html;
         }
 
         function taskCard(name, status) {
-            const p = suppliers[name].produtos.length;
             const labels = { pending: 'Pendente', active: 'Em andamento', done: 'Concluída' };
             const cls = { pending: 'badge-pending', active: 'badge-progress', done: 'badge-done' };
             const dis = status === 'done' ? ' disabled' : '';
             const click = status !== 'done' ? `onclick="openScan('${name.replace(/'/g, "\\'")}', this)"` : '';
-            return `<div class="task-card${dis ? ' disabled' : ''}" ${click}>
-    <div>
-      <div class="task-supplier">${name}</div>
-      <div class="task-meta">${p} produto(s)</div>
-    </div>
-    <span class="badge ${cls[status]}">${labels[status]}</span>
-  </div>`;
+            return `<div class="task-card${dis ? ' disabled' : ''}" ${click}><div><div class="task-supplier">${name}</div></div><span class="badge ${cls[status]}">${labels[status]}</span></div>`;
         }
 
-        /* ── Tela de bipagem ── */
         function openScan(name) {
             currentSupplier = name;
             sessionItems = [];
             currentProd = null;
             currentQty = 1;
-            supplierStatus[name] = 'active';
+            if (supplierStatus[name] === 'done') {
+                supplierStatus[name] = 'active';
+            } else if (supplierStatus[name] !== 'active') {
+                supplierStatus[name] = 'active';
+            }
 
             const prods = suppliers[name].produtos;
             document.getElementById('scan-title').textContent = name;
@@ -878,140 +882,154 @@
             document.getElementById('ean-input').value = '';
             document.getElementById('product-card').style.display = 'none';
             document.getElementById('add-section').style.display = 'none';
-            document.getElementById('qty-val').textContent = '1';
+            const qtyInput = document.getElementById('qty-input');
+            if (qtyInput) qtyInput.value = '';
             document.getElementById('loc-input').value = '';
             document.getElementById('items-list').innerHTML = '';
             document.getElementById('totals-note').textContent = '';
 
+            const pendingRecounts = recountRequests[name] || [];
+            const alertDiv = document.getElementById('recount-alert');
+            if (alertDiv) alertDiv.remove();
+            if (pendingRecounts.length > 0) {
+                let alertHtml = `<div class="recount-alert" id="recount-alert"><strong>⚠️ Recontagem solicitada para:</strong><ul class="recount-list">`;
+                pendingRecounts.forEach(ean => {
+                    const prod = prods.find(p => p.ean === ean);
+                    alertHtml += `<li>${prod ? prod.desc : ean} (EAN: ${ean})</li>`;
+                });
+                alertHtml += `</ul></div>`;
+                document.querySelector('#view-scan .content').insertAdjacentHTML('afterbegin', alertHtml);
+            }
+
             show('view-scan');
+
+            const eanInput = document.getElementById('ean-input');
+            eanInput.focus();
+            eanInput.readOnly = true;
+            setTimeout(() => { eanInput.readOnly = false; }, 200);
         }
 
-        function lookupEAN() {
-            const ean = document.getElementById('ean-input').value.trim();
-            if (!ean) return;
-
+        function findProductByCode(code) {
             const prods = suppliers[currentSupplier]?.produtos || [];
-            const found = prods.find(p => p.ean === ean);
+            return prods.find(p => p.ean === code || (p.codAlternativo && p.codAlternativo === code));
+        }
 
+        function lookupEAN(scanCode = null) {
+            let code = scanCode;
+            if (!code) {
+                code = document.getElementById('ean-input').value.trim();
+            } else {
+                document.getElementById('ean-input').value = code;
+            }
+            if (!code) return;
+
+            const found = findProductByCode(code);
             const card = document.getElementById('product-card');
             const sec = document.getElementById('add-section');
 
             if (found) {
                 currentProd = found;
+                const qtyInput = document.getElementById('qty-input');
+                qtyInput.value = '';
                 currentQty = 1;
-                document.getElementById('qty-val').textContent = '1';
-                card.innerHTML = `<div class="product-card">
-      <div class="product-name">${found.desc}</div>
-      <div class="product-ean">EAN: ${found.ean}</div>
-    </div>`;
+                card.innerHTML = `<div class="product-card"><div class="product-name">${found.desc}</div><div class="product-ean">EAN: ${found.ean}</div></div>`;
                 sec.style.display = 'block';
+                qtyInput.focus();
             } else {
                 currentProd = null;
-                card.innerHTML = `<div class="product-card">
-      <div class="not-found">EAN não encontrado na lista deste fornecedor.</div>
-      <div class="product-ean">EAN: ${ean}</div>
-    </div>`;
+                card.innerHTML = `<div class="product-card"><div class="not-found">Código não encontrado na lista deste fornecedor.</div><div class="product-ean">Código: ${code}</div></div>`;
                 sec.style.display = 'none';
             }
             card.style.display = 'block';
         }
 
-        // Permitir Enter no campo EAN
         document.getElementById('ean-input').addEventListener('keydown', e => {
             if (e.key === 'Enter') lookupEAN();
         });
 
         function changeQty(delta) {
-            currentQty = Math.max(1, currentQty + delta);
-            document.getElementById('qty-val').textContent = currentQty;
+            let input = document.getElementById('qty-input');
+            let currentVal = input.value === '' ? 0 : parseInt(input.value) || 0;
+            let newVal = currentVal + delta;
+            if (newVal < 1) newVal = 1;
+            input.value = newVal;
+            currentQty = newVal;
         }
 
         function addItem() {
             if (!currentProd) return;
+            const qtyInput = document.getElementById('qty-input');
+            let qty = qtyInput.value === '' ? 1 : parseInt(qtyInput.value) || 1;
+            if (qty < 1) qty = 1;
             const loc = document.getElementById('loc-input').value.trim() || 'Sem local';
-            sessionItems.push({ ean: currentProd.ean, desc: currentProd.desc, qty: currentQty, local: loc });
+            const ean = currentProd.ean;
 
-            if (!counts[currentProd.ean]) counts[currentProd.ean] = [];
-            counts[currentProd.ean].push({ local: loc, qty: currentQty });
+            if (recountRequests[currentSupplier] && recountRequests[currentSupplier].includes(ean)) {
+                if (counts[ean]) delete counts[ean];
+                recountRequests[currentSupplier] = recountRequests[currentSupplier].filter(e => e !== ean);
+                const alertDiv = document.getElementById('recount-alert');
+                if (alertDiv && recountRequests[currentSupplier].length === 0) alertDiv.remove();
+            }
 
+            if (!counts[ean]) counts[ean] = [];
+            counts[ean].push({ local: loc, qty: qty });
+            sessionItems.push({ ean: ean, desc: currentProd.desc, qty: qty, local: loc });
             renderItemsList();
+
             document.getElementById('ean-input').value = '';
             document.getElementById('loc-input').value = '';
             document.getElementById('product-card').style.display = 'none';
             document.getElementById('add-section').style.display = 'none';
             currentProd = null;
+            qtyInput.value = '';
             currentQty = 1;
-            document.getElementById('qty-val').textContent = '1';
             document.getElementById('ean-input').focus();
         }
 
         function renderItemsList() {
             const list = document.getElementById('items-list');
-            list.innerHTML = sessionItems.map(it =>
-                `<div class="item-row">
-      <div><div class="item-name">${it.desc}</div><div class="item-meta">EAN ${it.ean} · ${it.local}</div></div>
-      <div class="item-qty">${it.qty} un</div>
-    </div>`
-            ).join('');
-
-            // Totais por EAN
+            list.innerHTML = sessionItems.map(it => `<div class="item-row"><div><div class="item-name">${it.desc}</div><div class="item-meta">EAN ${it.ean} · ${it.local}</div></div><div class="item-qty">${it.qty} un</div></div>`).join('');
             const totMap = {};
             sessionItems.forEach(it => { totMap[it.ean] = (totMap[it.ean] || 0) + it.qty; });
             const multi = Object.entries(totMap).filter(([, v]) => v > 0);
-            document.getElementById('totals-note').innerHTML =
-                multi.map(([ean, tot]) => {
-                    const prod = (suppliers[currentSupplier]?.produtos || []).find(p => p.ean === ean);
-                    return `<strong>${prod?.desc || ean}:</strong> total somado = ${tot} un`;
-                }).join(' &nbsp;·&nbsp; ');
+            document.getElementById('totals-note').innerHTML = multi.map(([ean, tot]) => {
+                const prod = (suppliers[currentSupplier]?.produtos || []).find(p => p.ean === ean);
+                return `<strong>${prod?.desc || ean}:</strong> total somado = ${tot} un`;
+            }).join(' &nbsp;·&nbsp; ');
         }
 
         function finishSupplier() {
             supplierStatus[currentSupplier] = 'done';
+            if (recountRequests[currentSupplier]) recountRequests[currentSupplier] = [];
             goHome();
         }
 
-        /* ── Painel Gerencial ── */
         function openManager() {
             const names = Object.keys(suppliers);
             let total = 0, ok = 0, warn = 0;
             const rows = [];
-
             names.forEach(sup => {
                 suppliers[sup].produtos.forEach(p => {
                     const counted = (counts[p.ean] || []).reduce((s, c) => s + c.qty, 0);
                     const diff = counted - p.qtdSistema;
                     total++;
                     if (diff === 0) ok++; else warn++;
-                    rows.push({ sup, desc: p.desc, sistema: p.qtdSistema, counted, diff });
+                    rows.push({ sup, desc: p.desc, ean: p.ean, sistema: p.qtdSistema, counted, diff });
                 });
             });
-
             document.getElementById('m-total').textContent = total;
             document.getElementById('m-ok').textContent = ok;
             document.getElementById('m-warn').textContent = warn;
-
-            // chips de fornecedor
-            const chips = `<button class="chip active" onclick="filterMgr(this,'Todos')">Todos</button>` +
-                names.map(n => `<button class="chip" onclick="filterMgr(this,'${n.replace(/'/g, "\\'")}\")">${n}</button>`).join('');
+            const chips = `<button class="chip active" onclick="filterMgr(this,'Todos')">Todos</button>` + names.map(n => `<button class="chip" onclick="filterMgr(this,'${n.replace(/'/g, "\\'")}')">${n}</button>`).join('');
             document.getElementById('supplier-chips').innerHTML = chips;
-
             const tbody = document.getElementById('manager-tbody');
             tbody.innerHTML = rows.map(r => {
                 const cls = r.diff === 0 ? 'diff-ok' : 'diff-warn';
                 const sign = r.diff > 0 ? '+' : '';
-                const btn = r.diff === 0
-                    ? `<button class="acerto-btn applied" disabled>Ok</button>`
-                    : `<button class="acerto-btn" onclick="applyAcerto(this)">Acertar</button>`;
-                return `<tr data-supplier="${r.sup}">
-      <td>${r.sup}</td>
-      <td>${r.desc}</td>
-      <td>${r.sistema}</td>
-      <td>${r.counted}</td>
-      <td class="${cls}">${sign}${r.diff}</td>
-      <td>${btn}</td>
-    </tr>`;
+                const btnAcerto = r.diff === 0 ? `<button class="acerto-btn applied" disabled>Ok</button>` : `<button class="acerto-btn" onclick="applyAcerto(this)">Acertar</button>`;
+                const btnRecount = r.diff !== 0 ? `<button class="recount-btn" onclick="requestRecount('${r.sup}', '${r.ean}')">Recontar</button>` : '';
+                return `<tr data-supplier="${r.sup}">2<td>${r.sup}</td>2<td>${r.desc}</td>2<td>${r.sistema}</td>2<td>${r.counted}</td><td class="${cls}">${sign}${r.diff}</td>2<td>${btnAcerto} ${btnRecount}</td>2</tr>`;
             }).join('');
-
             show('view-manager');
         }
 
@@ -1031,7 +1049,68 @@
             document.getElementById('m-warn').textContent = warn;
         }
 
-        /* ── Init ── */
+        function requestRecount(supplier, ean) {
+            if (!recountRequests[supplier]) recountRequests[supplier] = [];
+            if (!recountRequests[supplier].includes(ean)) {
+                recountRequests[supplier].push(ean);
+            }
+            if (supplierStatus[supplier] === 'done') {
+                supplierStatus[supplier] = 'pending';
+            } else if (supplierStatus[supplier] !== 'active') {
+                supplierStatus[supplier] = 'pending';
+            }
+            alert(`Recontagem solicitada para o produto ${ean}. O fornecedor voltará para a lista de tarefas.`);
+            goHome();
+        }
+
+        function startCamera() {
+            if (cameraActive) return;
+            const container = document.getElementById('camera-container');
+            container.classList.add('active');
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                stopCamera();
+                lookupEAN(decodedText);
+            }, (errorMessage) => { }).catch(err => {
+                console.error("Erro ao iniciar câmera:", err);
+                alert("Não foi possível acessar a câmera. Verifique as permissões.");
+                stopCamera();
+            });
+            cameraActive = true;
+        }
+
+        function stopCamera() {
+            if (html5QrCode && cameraActive) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('camera-container').classList.remove('active');
+                    cameraActive = false;
+                    html5QrCode = null;
+                }).catch(err => console.warn("Erro ao parar câmera", err));
+            } else {
+                document.getElementById('camera-container').classList.remove('active');
+                cameraActive = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const qtyInput = document.getElementById('qty-input');
+            if (qtyInput) {
+                qtyInput.addEventListener('input', function () {
+                    let val = this.value === '' ? 0 : parseInt(this.value);
+                    if (isNaN(val)) val = 0;
+                    currentQty = val;
+                });
+                // Adiciona o evento de Enter no campo quantidade
+                qtyInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); // evita qualquer comportamento padrão
+                        addItem();
+                    }
+                });
+            }
+        });
+
         loadSheet();
     </script>
 </body>
