@@ -59,7 +59,6 @@
             display: flex;
         }
 
-        /* header */
         .hdr {
             background: var(--surface);
             border-bottom: .5px solid var(--border);
@@ -76,13 +75,23 @@
         }
 
         .back {
-            background: none;
+            background: var(--blue-bg);
             border: none;
             cursor: pointer;
-            color: var(--blue);
+            color: var(--blue-text);
             font-size: 14px;
-            padding: 4px 0;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 30px;
             font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.2s;
+        }
+
+        .back:active {
+            transform: scale(0.96);
         }
 
         .hdr-title {
@@ -121,7 +130,6 @@
             padding: 14px 16px 6px;
         }
 
-        /* task cards */
         .tasklist {
             padding: 0 12px;
             display: flex;
@@ -181,7 +189,6 @@
             color: var(--green-text);
         }
 
-        /* scan box */
         .scanbox {
             margin: 12px;
             background: var(--surface);
@@ -198,7 +205,7 @@
             color: var(--text2);
         }
 
-        /* ── CÂMERA ── */
+        /* câmera */
         #cam-wrap {
             display: none;
             position: relative;
@@ -219,7 +226,6 @@
             display: block;
         }
 
-        /* overlay com guia */
         .cam-overlay {
             position: absolute;
             inset: 0;
@@ -249,19 +255,18 @@
 
         @keyframes sweep {
             0% {
-                top: 36%
+                top: 36%;
             }
 
             50% {
-                top: 64%
+                top: 64%;
             }
 
             100% {
-                top: 36%
+                top: 36%;
             }
         }
 
-        /* botão fechar câmera */
         .cam-close {
             position: absolute;
             top: 8px;
@@ -276,7 +281,6 @@
             font-family: inherit;
         }
 
-        /* status câmera */
         #cam-status {
             font-size: 12px;
             color: var(--text2);
@@ -285,7 +289,6 @@
             padding: 4px 0;
         }
 
-        /* inputs */
         .scan-row {
             display: flex;
             gap: 8px;
@@ -421,11 +424,17 @@
             color: var(--text);
         }
 
-        .qval {
-            font-size: 20px;
-            font-weight: 700;
-            min-width: 30px;
+        .qty-input-field {
+            width: 70px;
+            height: 40px;
             text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            border: .5px solid var(--border-md);
+            border-radius: var(--rs);
+            background: var(--surface);
+            font-family: inherit;
+            padding: 0;
         }
 
         .loc-row {
@@ -441,7 +450,6 @@
             white-space: nowrap;
         }
 
-        /* items */
         .itemslist {
             padding: 0 12px;
             display: flex;
@@ -485,7 +493,6 @@
             color: var(--text2);
         }
 
-        /* notices */
         .loading {
             margin: 32px 16px;
             padding: 20px;
@@ -653,7 +660,6 @@
 
 <body>
 
-    <!-- VIEW HOME -->
     <div class="view active" id="view-home">
         <div class="hdr">
             <div class="hdr-title">Contagem de Estoque</div>
@@ -668,7 +674,6 @@
         </div>
     </div>
 
-    <!-- VIEW SCAN -->
     <div class="view" id="view-scan">
         <div class="hdr">
             <div class="hdr-row">
@@ -683,7 +688,6 @@
             <div class="scanbox">
                 <div class="hint">Bipe o código de barras ou digite o EAN</div>
 
-                <!-- viewfinder -->
                 <div id="cam-wrap">
                     <video id="cam-video" autoplay muted playsinline></video>
                     <div class="cam-overlay">
@@ -694,13 +698,12 @@
                 </div>
                 <div id="cam-status"></div>
 
-                <!-- input row -->
                 <div class="scan-row">
                     <input class="ean-in" id="ean-in" type="text" inputmode="numeric"
                         placeholder="EAN / código de barras" />
                     <button class="ibtn" id="cam-btn" onclick="toggleCam()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            stroke-width="2">
                             <path
                                 d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                             <circle cx="12" cy="13" r="4" />
@@ -716,7 +719,8 @@
                         <span class="qty-lbl">Quantidade:</span>
                         <div class="qty-ctrl">
                             <button class="qbtn" onclick="chgQty(-1)">−</button>
-                            <span class="qval" id="qval">1</span>
+                            <input type="number" id="qty-input" class="qty-input-field" value="" min="1" step="1"
+                                placeholder="1" />
                             <button class="qbtn" onclick="chgQty(1)">+</button>
                         </div>
                     </div>
@@ -736,7 +740,6 @@
         </div>
     </div>
 
-    <!-- VIEW MANAGER -->
     <div class="view" id="view-manager">
         <div class="hdr">
             <div class="hdr-row">
@@ -782,20 +785,12 @@
     </div>
 
     <script>
-        /* ══════════════════════════════════════════
-           ⬇  CONFIGURAÇÃO — cole aqui a URL do XLS
-        ══════════════════════════════════════════ */
         const XLS_URL = "https://img.kalunga.com.br/Hotsite/teste-app-lojas.xlsx";
-        /* ════════════════════════════════════════ */
 
-        /* ─── estado global ─── */
         let suppliers = {}, supplierStatus = {}, counts = {};
         let curSup = null, curProd = null, curQty = 1, session = [];
 
-        /* ─── câmera ─── */
-        let camStream = null;
-        let barcodeLoop = null;
-        let barcodeReader = null;   // BarcodeDetector (nativo) se disponível
+        let camStream = null, barcodeLoop = null, barcodeReader = null;
 
         function camWrap() { return document.getElementById('cam-wrap'); }
         function camVideo() { return document.getElementById('cam-video'); }
@@ -813,7 +808,6 @@
             st.textContent = 'Solicitando acesso à câmera...';
 
             try {
-                /* tenta câmera traseira primeiro */
                 const constraints = {
                     video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
                 };
@@ -826,7 +820,6 @@
                 camBtn().classList.add('cam-on');
                 st.textContent = 'Aponte a câmera para o código de barras';
 
-                /* usa BarcodeDetector nativo se disponível (Chrome Android >= 83) */
                 if ('BarcodeDetector' in window) {
                     barcodeReader = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf'] });
                     scanLoop();
@@ -849,22 +842,21 @@
         function scanLoop() {
             const vid = camVideo();
             if (!camStream || !barcodeReader) return;
-
             barcodeLoop = requestAnimationFrame(async () => {
                 try {
                     if (vid.readyState >= 2) {
                         const results = await barcodeReader.detect(vid);
                         if (results.length > 0) {
-                            const ean = results[0].rawValue;
+                            const raw = results[0].rawValue;
                             stopCam();
-                            document.getElementById('ean-in').value = ean;
+                            document.getElementById('ean-in').value = raw;
                             doLookup();
                             if (navigator.vibrate) navigator.vibrate(80);
-                            return; /* para o loop após sucesso */
+                            return;
                         }
                     }
                 } catch (_) { }
-                if (camStream) barcodeLoop = requestAnimationFrame(scanLoop); /* continua loop */
+                if (camStream) barcodeLoop = requestAnimationFrame(scanLoop);
             });
         }
 
@@ -880,21 +872,17 @@
             if (st) { st.style.display = 'none'; st.style.color = ''; }
         }
 
-        /* ─── navegação ─── */
         function showView(id) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
+
         function goHome() { stopCam(); renderHome(); showView('view-home'); }
 
-        /* ─── planilha ─── */
         async function loadSheet() {
             const c = document.getElementById('home-content');
             if (XLS_URL === 'TROCAR_ARQUIVO_URL') {
-                c.innerHTML = `<div class="notice">
-      <strong>Modo demonstração</strong> — configure a planilha substituindo:
-      <code>const XLS_URL = "TROCAR_ARQUIVO_URL";</code>
-    </div>`;
+                c.innerHTML = `<div class="notice"><strong>Modo demonstração</strong> — configure a planilha substituindo:<code>const XLS_URL = "TROCAR_ARQUIVO_URL";</code></div>`;
                 loadDemo(); return;
             }
             c.innerHTML = '<div class="loading">Buscando planilha...</div>';
@@ -904,7 +892,8 @@
                 const buf = await r.arrayBuffer();
                 const wb = XLSX.read(buf, { type: 'array' });
                 const ws = wb.Sheets[wb.SheetNames[0]];
-                parseRows(XLSX.utils.sheet_to_json(ws, { header: 1 }));
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                parseRows(rows);
                 renderHome();
             } catch (e) {
                 c.innerHTML = `<div class="notice err">Erro ao carregar planilha: ${e.message}</div>`;
@@ -912,13 +901,15 @@
             }
         }
 
-        /* Col0=fornecedor | Col1=EAN | Col2=desc | Col3=qtd sistema (oculto) */
+        // Agora colunas: 0=Fabricante, 1=Código, 2=Descrição, 3=Estoque, 4=EAN
         function parseRows(rows) {
             suppliers = {};
             rows.forEach((r, i) => {
-                if (i === 0 && isNaN(parseFloat(r[3]))) return;
-                const sup = String(r[0] || '').trim(), ean = String(r[1] || '').trim(),
-                    desc = String(r[2] || '').trim(), qtd = parseFloat(r[3]) || 0;
+                if (i === 0 || !r[0] || !r[4]) return; // pula cabeçalho e linhas sem dados
+                const sup = String(r[0] || '').trim();      // Fabricante
+                const ean = String(r[4] || '').trim();      // EAN
+                const desc = String(r[2] || '').trim();     // Descrição
+                const qtd = parseFloat(r[3]) || 0;          // Estoque
                 if (!sup || !ean) return;
                 if (!suppliers[sup]) suppliers[sup] = { produtos: [] };
                 suppliers[sup].produtos.push({ ean, desc, qtdSistema: qtd });
@@ -929,20 +920,13 @@
         function loadDemo() {
             parseRows([
                 [null],
-                ['Unilever', '7891150011267', 'Sabão OMO 1kg', 8],
-                ['Unilever', '7891024143773', 'Dove Shampoo 400ml', 15],
-                ['Unilever', '7891150055291', 'Comfort Azul 2L', 10],
-                ['P&G', '7500435127646', 'Ariel 2kg', 20],
-                ['P&G', '7501001160038', 'Pantene Pro-V 400ml', 12],
-                ['Nestlé', '7613035352148', 'Nescafé Clássico 100g', 25],
-                ['Nestlé', '7891000315231', 'Leite Moça 395g', 30],
-                ['Ambev', '7891991012072', 'Skol Lata 350ml', 48],
-                ['Ambev', '7891149108683', 'Brahma 600ml', 30],
+                ['Unilever', '7891150011267', 'Sabão OMO 1kg', 8, '7891150011267'],
+                ['Unilever', '7891024143773', 'Dove Shampoo 400ml', 15, '7891024143773'],
+                ['P&G', '7500435127646', 'Ariel 2kg', 20, '7500435127646'],
             ]);
             renderHome();
         }
 
-        /* ─── home ─── */
         function renderHome() {
             const names = Object.keys(suppliers);
             const done = names.filter(n => supplierStatus[n] === 'done');
@@ -956,7 +940,7 @@
             if (pend.length) h += `<div class="sec-label">Pendentes</div><div class="tasklist">${pend.map(n => tcard(n, 'pending')).join('')}</div>`;
             if (done.length) h += `<div class="sec-label">Concluídas</div><div class="tasklist">${done.map(n => tcard(n, 'done')).join('')}</div>`;
             if (done.length === names.length && names.length > 0)
-                h += `<div style="padding:16px"><button onclick="openManager()" style="width:100%;height:46px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">Ver painel gerencial →</button></div>`;
+                h += `<div style="padding:16px"><button onclick="openManager()" style="width:100%;height:46px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:600;cursor:pointer;">Ver painel gerencial →</button></div>`;
             document.getElementById('home-content').innerHTML = h;
         }
 
@@ -966,12 +950,11 @@
             const cls = { pending: 'b-pend', active: 'b-prog', done: 'b-done' };
             const clk = status !== 'done' ? `onclick="openScan('${name.replace(/'/g, "\\'")}')"` : '';
             return `<div class="taskcard${status === 'done' ? ' off' : ''}" ${clk}>
-    <div><div class="t-name">${name}</div><div class="t-meta">${p} produto(s)</div></div>
-    <span class="badge ${cls[status]}">${lbl[status]}</span>
-  </div>`;
+                <div><div class="t-name">${name}</div><div class="t-meta">${p} produto(s)</div></div>
+                <span class="badge ${cls[status]}">${lbl[status]}</span>
+            </div>`;
         }
 
-        /* ─── scan ─── */
         function openScan(name) {
             curSup = name; session = []; curProd = null; curQty = 1;
             supplierStatus[name] = 'active';
@@ -979,73 +962,116 @@
             document.getElementById('scan-sub').textContent = `${suppliers[name].produtos.length} produto(s)`;
             document.getElementById('ean-in').value = '';
             document.getElementById('loc-in').value = '';
-            document.getElementById('qval').textContent = '1';
+            const qtyInput = document.getElementById('qty-input');
+            if (qtyInput) qtyInput.value = '';
             document.getElementById('prod-card').style.display = 'none';
             document.getElementById('add-sec').style.display = 'none';
             document.getElementById('items-list').innerHTML = '';
             document.getElementById('tot-note').textContent = '';
             showView('view-scan');
+
+            // Foco no campo EAN com teclado oculto
+            const eanInput = document.getElementById('ean-in');
+            eanInput.focus();
+            eanInput.readOnly = true;
+            setTimeout(() => { eanInput.readOnly = false; }, 200);
+        }
+
+        function normalizeEAN(raw) {
+            let digits = raw.replace(/\D/g, '');
+            if (digits.length === 0) return '';
+            // Se a planilha tem EAN com 13 dígitos, completa zeros à esquerda
+            if (digits.length < 13) digits = digits.padStart(13, '0');
+            return digits;
         }
 
         function doLookup() {
-            const ean = document.getElementById('ean-in').value.trim();
-            if (!ean) return;
-            const found = (suppliers[curSup]?.produtos || []).find(p => p.ean === ean);
+            const raw = document.getElementById('ean-in').value.trim();
+            if (!raw) return;
+            const norm = normalizeEAN(raw);
+            const found = (suppliers[curSup]?.produtos || []).find(p => {
+                const pNorm = normalizeEAN(p.ean);
+                return pNorm === norm;
+            });
             const card = document.getElementById('prod-card');
             const sec = document.getElementById('add-sec');
             if (found) {
-                curProd = found; curQty = 1;
-                document.getElementById('qval').textContent = '1';
+                curProd = found;
+                curQty = 1;
+                const qtyInput = document.getElementById('qty-input');
+                if (qtyInput) qtyInput.value = '';
                 card.innerHTML = `<div class="prod-card"><div class="prod-name">${found.desc}</div><div class="prod-ean">EAN: ${found.ean}</div></div>`;
                 sec.style.display = 'block';
+                qtyInput.focus(); // foco na quantidade com teclado aberto
             } else {
                 curProd = null;
-                card.innerHTML = `<div class="prod-card"><div class="not-found">EAN não encontrado neste fornecedor.</div><div class="prod-ean">EAN: ${ean}</div></div>`;
+                card.innerHTML = `<div class="prod-card"><div class="not-found">EAN não encontrado neste fornecedor.</div><div class="prod-ean">EAN lido: ${raw}</div></div>`;
                 sec.style.display = 'none';
             }
             card.style.display = 'block';
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('ean-in').addEventListener('keydown', e => { if (e.key === 'Enter') doLookup(); });
+        document.getElementById('ean-in').addEventListener('keydown', e => {
+            if (e.key === 'Enter') doLookup();
         });
 
-        function chgQty(d) { curQty = Math.max(1, curQty + d); document.getElementById('qval').textContent = curQty; }
+        function chgQty(delta) {
+            const input = document.getElementById('qty-input');
+            let val = input.value === '' ? 0 : parseInt(input.value) || 0;
+            let newVal = val + delta;
+            if (newVal < 1) newVal = 1;
+            input.value = newVal;
+            curQty = newVal;
+        }
 
         function addItem() {
             if (!curProd) return;
+            const qtyInput = document.getElementById('qty-input');
+            let qty = qtyInput.value === '' ? 1 : parseInt(qtyInput.value) || 1;
+            if (qty < 1) qty = 1;
             const loc = document.getElementById('loc-in').value.trim() || 'Sem local';
-            session.push({ ean: curProd.ean, desc: curProd.desc, qty: curQty, local: loc });
-            if (!counts[curProd.ean]) counts[curProd.ean] = [];
-            counts[curProd.ean].push({ local: loc, qty: curQty });
+            const ean = curProd.ean;
+
+            if (!counts[ean]) counts[ean] = [];
+            counts[ean].push({ local: loc, qty: qty });
+            session.push({ ean, desc: curProd.desc, qty, local: loc });
             renderItems();
+
             document.getElementById('ean-in').value = '';
             document.getElementById('loc-in').value = '';
             document.getElementById('prod-card').style.display = 'none';
             document.getElementById('add-sec').style.display = 'none';
-            curProd = null; curQty = 1;
-            document.getElementById('qval').textContent = '1';
-            document.getElementById('ean-in').focus();
+            curProd = null;
+            qtyInput.value = '';
+            curQty = 1;
+
+            const eanInput = document.getElementById('ean-in');
+            eanInput.focus();
+            eanInput.readOnly = true;
+            setTimeout(() => { eanInput.readOnly = false; }, 200);
         }
 
         function renderItems() {
-            document.getElementById('items-list').innerHTML = session.map(it =>
-                `<div class="itemrow">
-      <div><div class="iname">${it.desc}</div><div class="imeta">EAN ${it.ean} · ${it.local}</div></div>
-      <div class="iqty">${it.qty} un</div>
-    </div>`).join('');
+            const list = document.getElementById('items-list');
+            list.innerHTML = session.map(it => `
+                <div class="itemrow">
+                    <div><div class="iname">${it.desc}</div><div class="imeta">EAN ${it.ean} · ${it.local}</div></div>
+                    <div class="iqty">${it.qty} un</div>
+                </div>`).join('');
             const tot = {};
             session.forEach(it => { tot[it.ean] = (tot[it.ean] || 0) + it.qty; });
-            document.getElementById('tot-note').innerHTML = Object.entries(tot)
-                .map(([ean, t]) => {
-                    const p = (suppliers[curSup]?.produtos || []).find(x => x.ean === ean);
-                    return `<strong>${p?.desc || ean}:</strong> total = ${t} un`;
-                }).join(' · ');
+            document.getElementById('tot-note').innerHTML = Object.entries(tot).map(([ean, t]) => {
+                const prod = (suppliers[curSup]?.produtos || []).find(p => p.ean === ean);
+                return `<strong>${prod?.desc || ean}:</strong> total = ${t} un`;
+            }).join(' · ');
         }
 
-        function finishSupplier() { supplierStatus[curSup] = 'done'; stopCam(); goHome(); }
+        function finishSupplier() {
+            supplierStatus[curSup] = 'done';
+            stopCam();
+            goHome();
+        }
 
-        /* ─── manager ─── */
         function openManager() {
             const names = Object.keys(suppliers);
             let total = 0, ok = 0, warn = 0; const rows = [];
@@ -1072,8 +1098,11 @@
         }
 
         function fltMgr(chip, sup) {
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); chip.classList.add('active');
-            document.querySelectorAll('#mgr-body tr').forEach(tr => { tr.style.display = (sup === 'Todos' || tr.dataset.supplier === sup) ? '' : 'none'; });
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            document.querySelectorAll('#mgr-body tr').forEach(tr => {
+                tr.style.display = (sup === 'Todos' || tr.dataset.supplier === sup) ? '' : 'none';
+            });
         }
 
         function applyAcerto(btn) {
@@ -1081,7 +1110,24 @@
             document.getElementById('m-wrn').textContent = document.querySelectorAll('.abtn:not(.ok)').length;
         }
 
-        /* ─── init ─── */
+        // Atualiza curQty quando o usuário digita no campo quantidade
+        document.addEventListener('DOMContentLoaded', () => {
+            const qtyInput = document.getElementById('qty-input');
+            if (qtyInput) {
+                qtyInput.addEventListener('input', function () {
+                    let val = this.value === '' ? 0 : parseInt(this.value);
+                    if (isNaN(val)) val = 0;
+                    curQty = val;
+                });
+                qtyInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addItem();
+                    }
+                });
+            }
+        });
+
         loadSheet();
     </script>
 </body>
