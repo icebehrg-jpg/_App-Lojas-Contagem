@@ -710,7 +710,6 @@
                         </svg>
                         Câmera
                     </button>
-                    <button class="ibtn" onclick="doLookup()">Buscar</button>
                 </div>
 
                 <div id="prod-card" style="display:none"></div>
@@ -768,18 +767,15 @@
             <div class="frow" id="chips"></div>
             <div style="overflow-x:auto">
                 <table class="mtable">
-                    <thead>
-                        <tr>
-                            <th>Fornecedor</th>
-                            <th>Produto</th>
-                            <th>Sistema</th>
-                            <th>Contagem</th>
-                            <th>Dif.</th>
-                            <th>Ação</th>
-                        </tr>
+                    <thead>2?<th>Fornecedor</th>
+                        <th>Produto</th>
+                        <th>Sistema</th>
+                        <th>Contagem</th>
+                        <th>Dif.</th>
+                        <th>Ação</th>2?
                     </thead>
                     <tbody id="mgr-body"></tbody>
-                </table>
+                    2?
             </div>
         </div>
     </div>
@@ -901,7 +897,7 @@
             }
         }
 
-        // Agora colunas: 0=Fabricante, 1=Código, 2=Descrição, 3=Estoque, 4=EAN
+        // Colunas: 0=Fabricante, 1=Código, 2=Descrição, 3=Estoque, 4=EAN
         function parseRows(rows) {
             suppliers = {};
             rows.forEach((r, i) => {
@@ -1092,7 +1088,7 @@
             document.getElementById('mgr-body').innerHTML = rows.map(r => {
                 const cs = r.diff === 0 ? 'dok' : 'dwrn', sg = r.diff > 0 ? '+' : '';
                 const btn = r.diff === 0 ? `<button class="abtn ok" disabled>Ok</button>` : `<button class="abtn" onclick="applyAcerto(this)">Acertar</button>`;
-                return `<tr data-supplier="${r.sup}"><td>${r.sup}</td><td>${r.desc}</td><td>${r.sistema}</td><td>${r.cnt}</td><td class="${cs}">${sg}${r.diff}</td><td>${btn}</td></tr>`;
+                return `<tr data-supplier="${r.sup}">2?<td>${r.sup}2?<td>${r.desc}2?<td>${r.sistema}2?<td>${r.cnt}2?<td class="${cs}">${sg}${r.diff}2?<td>${btn}2?</tr>`;
             }).join('');
             showView('view-manager');
         }
